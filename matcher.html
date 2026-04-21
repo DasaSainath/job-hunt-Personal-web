@@ -8,10 +8,7 @@
   <style>
     /* ---- Two-panel workspace ---- */
     body { overflow: hidden; }
-    .workspace {
-      display: flex;
-      height: calc(100vh - 52px);
-    }
+    .workspace { display: flex; height: calc(100vh - 52px); }
 
     /* Left panel */
     .panel-left {
@@ -32,7 +29,8 @@
       flex-shrink: 0;
       gap: 8px;
     }
-    .panel-left-header h3 {
+    .panel-left-header-left { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+    .panel-left-header-left h3 {
       margin: 0;
       font-size: 0.78rem;
       color: var(--muted);
@@ -40,101 +38,110 @@
       text-transform: uppercase;
       letter-spacing: 0.06em;
     }
-    .dl-btns { display: flex; gap: 6px; }
+    .file-name-display {
+      font-size: 0.78rem;
+      color: var(--text);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+    }
+    .dl-btns { display: flex; gap: 6px; flex-shrink: 0; }
     .resume-scroll {
       flex: 1;
       overflow-y: auto;
-      padding: 24px 20px;
       background: #e8eaed;
     }
 
-    /* Right panel */
-    .panel-right {
-      flex: 1;
-      overflow-y: auto;
-      padding: 24px 28px;
+    /* Upload prompt */
+    .upload-prompt {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding: 32px;
     }
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 40px 32px;
+      text-align: center;
+      background: var(--surface);
+      transition: border-color 0.2s, background 0.2s;
+      cursor: pointer;
+      width: 100%;
+    }
+    .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(110,168,254,0.05);
+    }
+    .upload-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .upload-zone p { margin: 6px 0; }
+    .upload-zone .upload-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      padding: 9px 20px;
+      background: var(--accent);
+      color: white;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: filter 0.15s;
+    }
+    .upload-zone .upload-label:hover { filter: brightness(1.1); }
 
-    /* ---- Resume document ---- */
+    /* Loaded resume area */
+    .resume-loaded { display: none; flex-direction: column; height: 100%; }
+    .resume-loaded.visible { display: flex; }
+
+    /* Added skills banner */
+    .added-banner {
+      display: none;
+      background: rgba(123,227,181,0.1);
+      border-bottom: 1px solid var(--accent-2);
+      padding: 10px 16px;
+      flex-shrink: 0;
+    }
+    .added-banner.visible { display: block; }
+    .added-banner-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent-2);
+      margin-bottom: 6px;
+    }
+    .added-banner-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+
+    /* Resume document */
+    .resume-scroll-inner { flex: 1; overflow-y: auto; padding: 24px 20px; }
     .resume-doc {
       background: white;
       padding: 36px 40px;
       border-radius: 3px;
       box-shadow: 0 2px 16px rgba(0,0,0,0.18);
-      font-family: 'Georgia', 'Times New Roman', serif;
+      font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
       color: #111;
       font-size: 12.5px;
       line-height: 1.5;
     }
-    .resume-doc .r-name {
-      font-size: 20px;
-      font-weight: 700;
-      margin: 0 0 4px;
-      letter-spacing: -0.01em;
-    }
-    .resume-doc .r-title-line {
-      font-size: 12px;
-      color: #444;
-      margin-bottom: 4px;
-      font-style: italic;
-    }
-    .resume-doc .r-contact {
-      font-size: 11px;
-      color: #444;
-      margin-bottom: 14px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
-    }
-    .resume-doc .r-contact a { color: #1a56db; text-decoration: none; }
-    .resume-doc .r-contact .sep { color: #bbb; }
-    .resume-doc .r-section {
-      margin-top: 14px;
-      border-top: 1.5px solid #222;
-      padding-top: 5px;
-    }
-    .resume-doc .r-section-title {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.09em;
-      margin-bottom: 6px;
-    }
-    .resume-doc .r-summary { font-size: 12px; color: #333; margin: 0; }
-    .resume-doc .r-skills-row { font-size: 12px; margin-bottom: 2px; }
-    .resume-doc .r-skills-row strong { font-weight: 700; }
-    .resume-doc .r-exp-item { margin-bottom: 10px; }
-    .resume-doc .r-exp-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 8px;
-    }
-    .resume-doc .r-exp-role { font-weight: 700; font-size: 12.5px; }
-    .resume-doc .r-exp-company { font-weight: 400; font-style: italic; }
-    .resume-doc .r-exp-date { font-size: 11px; color: #555; white-space: nowrap; flex-shrink: 0; }
-    .resume-doc .r-exp-loc { font-size: 11px; color: #555; font-style: italic; }
-    .resume-doc ul { margin: 4px 0 0; padding-left: 16px; }
+    .resume-doc h1 { font-size: 20px; margin: 0 0 4px; }
+    .resume-doc h2 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1.5px solid #222; margin: 14px 0 5px; padding-bottom: 3px; }
+    .resume-doc h3 { font-size: 12.5px; margin: 8px 0 2px; font-weight: 700; }
+    .resume-doc p { margin: 2px 0; font-size: 12px; }
+    .resume-doc ul { margin: 3px 0 0; padding-left: 16px; }
     .resume-doc li { margin-bottom: 2px; font-size: 12px; }
-    .resume-doc .r-proj-item { margin-bottom: 7px; }
-    .resume-doc .r-proj-name { font-weight: 700; font-size: 12.5px; }
-    .resume-doc .r-proj-tech { color: #555; font-size: 11px; }
-    .resume-doc .r-proj-desc { font-size: 12px; color: #333; }
-    .resume-doc .r-edu-item { margin-bottom: 6px; }
-    .resume-doc .r-edu-degree { font-weight: 700; font-size: 12.5px; }
-    .resume-doc .r-edu-sub { font-size: 11.5px; color: #444; }
+    .resume-doc a { color: #1a56db; }
+    .resume-doc table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .resume-doc td, .resume-doc th { padding: 2px 4px; vertical-align: top; }
 
-    /* Added skill highlight */
-    .skill-added {
-      background: #d1fae5;
-      color: #065f46;
-      border-radius: 2px;
-      padding: 0 3px;
-      font-weight: 700;
-    }
+    /* Right panel */
+    .panel-right { flex: 1; overflow-y: auto; padding: 24px 28px; }
 
-    /* ---- Right panel ---- */
     .matcher-header { margin-bottom: 20px; }
     .matcher-header h2 { font-size: 1.35rem; margin: 0 0 4px; }
     .jd-label {
@@ -145,8 +152,9 @@
       margin-bottom: 6px;
       font-weight: 600;
     }
+    .analyze-row { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
-    /* Results sections */
+    /* Results */
     .result-section { margin-top: 22px; }
     .result-section-title {
       font-size: 0.78rem;
@@ -159,12 +167,11 @@
       align-items: center;
       gap: 8px;
     }
-    .result-section-title::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
+    .result-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .results-hidden { display: none; }
+    .match-summary-top { margin-top: 20px; }
+    .jd-keywords-note { margin: 0 0 8px; }
+    .history-section { margin-top: 36px; padding-bottom: 40px; }
 
     /* Score booster cards */
     .booster-list { display: flex; flex-direction: column; gap: 8px; }
@@ -219,7 +226,7 @@
       filter: none;
     }
 
-    /* History */
+    /* History table */
     .history-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
     .history-table th {
       text-align: left;
@@ -236,7 +243,8 @@
     .history-table .score-high { color: var(--accent-2); font-weight: 700; }
     .history-table .score-mid { color: var(--warn); font-weight: 700; }
     .history-table .score-low { color: var(--danger); font-weight: 700; }
-    .history-table .jd-preview {
+    .history-clear-btn { margin-top: 10px; }
+    .jd-preview-cell {
       max-width: 200px;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -245,29 +253,23 @@
       font-size: 0.8rem;
     }
 
-    /* Print — show only resume */
+    /* Print */
     @media print {
-      nav, .panel-right, .panel-left-header { display: none !important; }
+      nav, .panel-right, .panel-left-header, .added-banner { display: none !important; }
       body { overflow: visible !important; background: white !important; }
       .workspace { display: block !important; height: auto !important; }
       .panel-left { width: 100% !important; border: none !important; overflow: visible !important; }
-      .resume-scroll { background: white !important; padding: 0 !important; overflow: visible !important; }
-      .resume-doc { box-shadow: none !important; padding: 20px 0 !important; }
+      .resume-loaded { display: flex !important; height: auto !important; }
+      .resume-scroll-inner { overflow: visible !important; padding: 0 !important; }
+      .resume-doc { box-shadow: none !important; padding: 0 !important; }
     }
-
-    /* Utility layout helpers */
-    .results-hidden { display: none; }
-    .match-summary-top { margin-top: 20px; }
-    .analyze-row { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .jd-keywords-note { margin: 0 0 8px; }
-    .history-section { margin-top: 36px; padding-bottom: 40px; }
 
     /* Responsive */
     @media (max-width: 900px) {
       body { overflow: auto; }
       .workspace { flex-direction: column; height: auto; }
       .panel-left { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid var(--border); }
-      .resume-scroll { max-height: 480px; }
+      .resume-scroll-inner { max-height: 460px; }
       .panel-right { padding: 16px; }
     }
   </style>
@@ -275,7 +277,7 @@
 <body>
   <nav class="nav">
     <div class="nav-inner">
-      <a href="index.html" class="nav-brand"><span class="dot"></span><span id="brand-name">Portfolio</span></a>
+      <a href="index.html" class="nav-brand"><span class="dot"></span>Job Hub</a>
       <div class="nav-links">
         <a href="index.html">About</a>
         <a href="jobs.html">Jobs</a>
@@ -286,18 +288,45 @@
 
   <div class="workspace">
 
-    <!-- LEFT: Resume Preview -->
+    <!-- LEFT: Resume -->
     <div class="panel-left">
       <div class="panel-left-header">
-        <h3>Resume Preview</h3>
+        <div class="panel-left-header-left">
+          <h3>Resume</h3>
+          <span class="file-name-display" id="file-name-display">No file loaded</span>
+        </div>
         <div class="dl-btns">
+          <label class="btn btn-ghost btn-sm" for="file-change" title="Upload different resume">↑ Change</label>
+          <input type="file" id="file-change" accept=".docx,.txt" hidden />
           <button type="button" class="btn btn-ghost btn-sm" id="dl-pdf" title="Print / Save as PDF">⬇ PDF</button>
           <button type="button" class="btn btn-sm" id="dl-word" title="Download as Word (.docx)">⬇ Word</button>
         </div>
       </div>
+
       <div class="resume-scroll">
-        <div class="resume-doc" id="resume-preview">
-          <p class="muted">Loading resume…</p>
+        <!-- Upload prompt (shown when no file loaded) -->
+        <div class="upload-prompt" id="upload-prompt">
+          <div class="upload-zone" id="upload-zone">
+            <div class="upload-icon">📄</div>
+            <p><strong>Upload your resume</strong></p>
+            <p class="muted small">Drag &amp; drop here, or click to choose</p>
+            <label class="upload-label" for="file-input">
+              Choose Resume File
+            </label>
+            <input type="file" id="file-input" accept=".docx,.txt" hidden />
+            <p class="muted small" style="margin-top:14px;">Supports .docx · .txt</p>
+          </div>
+        </div>
+
+        <!-- Loaded resume (shown after upload) -->
+        <div class="resume-loaded" id="resume-loaded">
+          <div class="added-banner" id="added-banner">
+            <div class="added-banner-label">Skills Added This Session</div>
+            <div class="added-banner-chips" id="added-chips"></div>
+          </div>
+          <div class="resume-scroll-inner">
+            <div class="resume-doc" id="resume-preview"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -306,7 +335,7 @@
     <div class="panel-right">
       <div class="matcher-header">
         <h2>Resume ↔ JD Matcher</h2>
-        <p class="muted small">Paste a job description · see your score · click skills to add them to your resume · download updated resume.</p>
+        <p class="muted small">Upload your resume · paste a job description · get your score · click skills to add them · download updated resume.</p>
       </div>
 
       <div>
@@ -319,7 +348,6 @@
         </div>
       </div>
 
-      <!-- Score + results -->
       <div id="results" class="results-hidden">
         <div class="match-summary match-summary-top">
           <div class="score" id="final-score">—</div>
@@ -346,12 +374,11 @@
 
         <div class="result-section">
           <div class="result-section-title">JD Keywords to Mirror</div>
-          <p class="muted small jd-keywords-note">Exact words the JD uses — mirror them where truthful for ATS scoring.</p>
+          <p class="muted small jd-keywords-note">Exact terms the JD uses — mirror them where truthful for ATS scoring.</p>
           <div id="keywords" class="chip-row"></div>
         </div>
       </div>
 
-      <!-- History -->
       <div class="result-section history-section">
         <div class="result-section-title">Match History</div>
         <div id="history-body">
@@ -362,107 +389,112 @@
 
   </div>
 
-  <!-- CDN: Word export + FileSaver -->
+  <!-- CDN libraries -->
+  <script src="https://unpkg.com/mammoth@1.6.0/mammoth.browser.min.js"></script>
   <script src="https://unpkg.com/html-docx-js@0.3.1/dist/html-docx.js"></script>
   <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 
   <script type="module">
-    import { loadResume, loadSkills, resumeToText, escapeHtml, scoreClass, markActiveNav } from './js/common.js';
+    import { loadSkills, escapeHtml, scoreClass, markActiveNav } from './js/common.js';
     import { matchResumeToJD } from './js/matcher.js';
 
     markActiveNav();
 
     const HISTORY_KEY = 'jh_match_history';
 
-    let resumeState = null;
     let skills = [];
-    let addedSkills = [];   // skills added via booster buttons this session
+    let uploadedHtml = '';      // Mammoth-converted HTML for display
+    let uploadedText = '';      // plain text for matching
+    let uploadedFileName = '';
+    let addedSkills = [];
     let currentJD = '';
-    let currentScore = 0;
 
-    // ---- Render resume preview ----
-    function renderResumePreview() {
-      const r = resumeState;
-      if (!r) return;
+    // ---- File upload handling ----
+    function setupUpload(inputEl) {
+      inputEl.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (file) handleFile(file);
+        e.target.value = '';
+      });
+    }
 
-      const contactParts = [];
-      if (r.email) contactParts.push(`<a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>`);
-      if (r.phone) contactParts.push(escapeHtml(r.phone));
-      if (r.location) contactParts.push(escapeHtml(r.location));
-      if (r.links?.linkedin) contactParts.push(`<a href="${escapeHtml(r.links.linkedin)}" target="_blank">LinkedIn</a>`);
-      if (r.links?.github) contactParts.push(`<a href="${escapeHtml(r.links.github)}" target="_blank">GitHub</a>`);
-      const contactHtml = contactParts.map((p, i) =>
-        i < contactParts.length - 1 ? p + ' <span class="sep">|</span>' : p
-      ).join(' ');
+    setupUpload(document.getElementById('file-input'));
+    setupUpload(document.getElementById('file-change'));
 
-      // Skills — merge addedSkills into a special group
-      const skillsCopy = JSON.parse(JSON.stringify(r.skills || {}));
-      const sessionAdded = addedSkills.filter(s => !Object.values(skillsCopy).flat().includes(s));
-      if (sessionAdded.length) skillsCopy['_added'] = sessionAdded;
+    const uploadZone = document.getElementById('upload-zone');
+    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+    uploadZone.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadZone.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) handleFile(file);
+    });
 
-      const skillsHtml = Object.entries(skillsCopy).map(([group, list]) => {
-        if (!Array.isArray(list) || !list.length) return '';
-        const label = group === '_added' ? 'Added Skills' : group.charAt(0).toUpperCase() + group.slice(1);
-        const items = list.map(s => {
-          const isNew = addedSkills.includes(s);
-          return isNew ? `<span class="skill-added">${escapeHtml(s)}</span>` : escapeHtml(s);
-        }).join(', ');
-        return `<div class="r-skills-row"><strong>${escapeHtml(label)}:</strong> ${items}</div>`;
-      }).join('');
+    async function handleFile(file) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      document.getElementById('stats').textContent = 'Parsing resume…';
 
-      const expHtml = (r.experience || []).map(e => `
-        <div class="r-exp-item">
-          <div class="r-exp-head">
-            <span class="r-exp-role">${escapeHtml(e.role || '')}${e.company ? ` — <span class="r-exp-company">${escapeHtml(e.company)}</span>` : ''}</span>
-            <span class="r-exp-date">${escapeHtml(e.start || '')}${e.end ? ` – ${escapeHtml(e.end)}` : ''}</span>
-          </div>
-          ${e.location ? `<div class="r-exp-loc">${escapeHtml(e.location)}</div>` : ''}
-          ${e.bullets?.length ? `<ul>${e.bullets.map(b => `<li>${escapeHtml(b)}</li>`).join('')}</ul>` : ''}
-        </div>
-      `).join('');
+      try {
+        if (ext === 'docx') {
+          const arrayBuffer = await file.arrayBuffer();
+          const result = await mammoth.convertToHtml({ arrayBuffer });
+          uploadedHtml = result.value;
+          const tmp = document.createElement('div');
+          tmp.innerHTML = uploadedHtml;
+          uploadedText = tmp.textContent || tmp.innerText || '';
+        } else if (ext === 'txt') {
+          uploadedText = await file.text();
+          uploadedHtml = `<pre style="white-space:pre-wrap;font-family:inherit;font-size:12px">${escapeHtml(uploadedText)}</pre>`;
+        } else {
+          document.getElementById('stats').textContent = 'Unsupported format. Use .docx or .txt';
+          return;
+        }
 
-      const projHtml = (r.projects || []).map(p => `
-        <div class="r-proj-item">
-          <span class="r-proj-name">${p.link ? `<a href="${escapeHtml(p.link)}">${escapeHtml(p.name || '')}</a>` : escapeHtml(p.name || '')}</span>
-          ${p.tech?.length ? `<span class="r-proj-tech"> (${p.tech.map(t => escapeHtml(t)).join(', ')})</span>` : ''}
-          ${p.description ? `<div class="r-proj-desc">${escapeHtml(p.description)}</div>` : ''}
-        </div>
-      `).join('');
+        uploadedFileName = file.name;
+        addedSkills = [];
+        showResumePanel();
+        document.getElementById('stats').textContent =
+          `Resume loaded (${uploadedText.length.toLocaleString()} chars) · ${skills.length} skills in dictionary`;
+      } catch (err) {
+        document.getElementById('stats').textContent = 'Error reading file: ' + err.message;
+        console.error(err);
+      }
+    }
 
-      const eduHtml = (r.education || []).map(ed => `
-        <div class="r-edu-item">
-          <div class="r-edu-degree">${escapeHtml(ed.degree || '')}</div>
-          <div class="r-edu-sub">${[ed.school, ed.location, ed.year].filter(Boolean).map(escapeHtml).join(' · ')}</div>
-        </div>
-      `).join('');
+    function showResumePanel() {
+      document.getElementById('upload-prompt').style.display = 'none';
+      document.getElementById('resume-loaded').classList.add('visible');
+      document.getElementById('resume-preview').innerHTML = uploadedHtml;
+      document.getElementById('file-name-display').textContent = uploadedFileName;
+      updateAddedBanner();
+    }
 
-      document.getElementById('resume-preview').innerHTML = `
-        <div class="r-name">${escapeHtml(r.name || '')}</div>
-        ${r.title ? `<div class="r-title-line">${escapeHtml(r.title)}</div>` : ''}
-        <div class="r-contact">${contactHtml}</div>
-
-        ${r.summary ? `<div class="r-section"><div class="r-section-title">Summary</div><p class="r-summary">${escapeHtml(r.summary)}</p></div>` : ''}
-        ${skillsHtml ? `<div class="r-section"><div class="r-section-title">Skills</div>${skillsHtml}</div>` : ''}
-        ${expHtml ? `<div class="r-section"><div class="r-section-title">Experience</div>${expHtml}</div>` : ''}
-        ${projHtml ? `<div class="r-section"><div class="r-section-title">Projects</div>${projHtml}</div>` : ''}
-        ${eduHtml ? `<div class="r-section"><div class="r-section-title">Education</div>${eduHtml}</div>` : ''}
-      `;
+    function updateAddedBanner() {
+      const banner = document.getElementById('added-banner');
+      const chips = document.getElementById('added-chips');
+      if (addedSkills.length === 0) {
+        banner.classList.remove('visible');
+      } else {
+        banner.classList.add('visible');
+        chips.innerHTML = addedSkills.map(s =>
+          `<span class="chip matched">${escapeHtml(s)}</span>`
+        ).join('');
+      }
     }
 
     // ---- Analysis ----
-    function buildResumeText() {
-      let text = resumeToText(resumeState);
-      if (addedSkills.length) text += ' ' + addedSkills.join(' ');
-      return text;
+    function buildMatchText() {
+      return uploadedText + (addedSkills.length ? ' ' + addedSkills.join(' ') : '');
     }
 
     function analyze() {
       const jd = document.getElementById('jd').value.trim();
-      if (!jd || !resumeState) return;
+      if (!jd) { alert('Paste a job description first.'); return; }
+      if (!uploadedText) { alert('Upload your resume first — use the left panel.'); return; }
       currentJD = jd;
 
-      const result = matchResumeToJD(buildResumeText(), jd, skills);
-      currentScore = result.score;
+      const result = matchResumeToJD(buildMatchText(), jd, skills);
       renderResults(result);
       saveHistory(result, jd);
     }
@@ -474,8 +506,8 @@
       scoreEl.textContent = r.score + '%';
       scoreEl.className = 'score ' + scoreClass(r.score);
 
-      const headlines = { 75: 'Strong match — apply today.', 55: 'Good match — worth a tailored application.', 35: 'Partial match — tailor heavily or skip.', 0: 'Weak match — probably not worth the time.' };
-      document.getElementById('headline').textContent = Object.entries(headlines).reverse().find(([t]) => r.score >= +t)[1];
+      const headlineMap = [[75, 'Strong match — apply today.'], [55, 'Good match — worth a tailored application.'], [35, 'Partial match — tailor heavily or skip.'], [0, 'Weak match — probably not worth the time.']];
+      document.getElementById('headline').textContent = headlineMap.find(([t]) => r.score >= t)[1];
 
       const parts = [];
       if (r.skillOverlapPct !== null) parts.push(`Skill overlap: ${r.skillOverlapPct}%`);
@@ -492,7 +524,7 @@
 
       document.getElementById('keywords').innerHTML = r.jdOnlyKeywords.length
         ? r.jdOnlyKeywords.map(k => `<span class="chip">${escapeHtml(k.term)}</span>`).join('')
-        : '<span class="muted small">No distinctive JD-only terms.</span>';
+        : '<span class="muted small">No distinctive JD-only terms found.</span>';
 
       renderBoosters(r);
     }
@@ -506,25 +538,23 @@
         return;
       }
 
-      const baseText = buildResumeText();
+      const base = buildMatchText();
       const boosts = candidates.map(skill => {
-        const augmented = baseText + ' ' + skill + ' ' + skill;
-        const trial = matchResumeToJD(augmented, currentJD, skills);
+        const trial = matchResumeToJD(base + ' ' + skill + ' ' + skill, currentJD, skills);
         return { skill, delta: trial.score - r.score, newScore: trial.score };
       }).sort((a, b) => b.delta - a.delta);
 
       container.innerHTML = boosts.map(b => {
         const already = addedSkills.includes(b.skill);
-        const id = 'booster-' + b.skill.replace(/[^a-z0-9]/gi, '-');
         return `
-          <div class="booster-card ${already ? 'is-added' : ''}" id="${id}">
+          <div class="booster-card ${already ? 'is-added' : ''}">
             <div class="booster-left">
               <span class="booster-skill">${escapeHtml(b.skill)}</span>
               ${b.delta > 0
                 ? `<span class="booster-delta">+${b.delta}% &rarr; ${b.newScore}%</span>`
                 : `<span class="booster-no-delta">minimal impact</span>`}
             </div>
-            <button class="btn-add" data-skill="${escapeHtml(b.skill)}" ${already ? 'disabled' : ''}>
+            <button type="button" class="btn-add" data-skill="${escapeHtml(b.skill)}" ${already ? 'disabled' : ''}>
               ${already ? '✓ Added' : '+ Add to Resume'}
             </button>
           </div>
@@ -539,7 +569,7 @@
     function addSkill(skill) {
       if (addedSkills.includes(skill)) return;
       addedSkills.push(skill);
-      renderResumePreview();
+      updateAddedBanner();
       if (currentJD) analyze();
     }
 
@@ -551,6 +581,7 @@
         score: result.score,
         matched: result.matchedSkills.length,
         missing: result.missingSkills.length,
+        fileName: uploadedFileName,
         jdSnippet: jd.slice(0, 140).replace(/\s+/g, ' ')
       });
       localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 20)));
@@ -568,31 +599,25 @@
         el.innerHTML = '<p class="muted small">No history yet.</p>';
         return;
       }
-      const scoreColorClass = s => s >= 70 ? 'score-high' : s >= 50 ? 'score-mid' : 'score-low';
+      const cls = s => s >= 70 ? 'score-high' : s >= 50 ? 'score-mid' : 'score-low';
       el.innerHTML = `
         <table class="history-table">
           <thead>
-            <tr>
-              <th>Date</th>
-              <th>Score</th>
-              <th>Matched</th>
-              <th>Missing</th>
-              <th>JD Preview</th>
-            </tr>
+            <tr><th>Date</th><th>Score</th><th>Matched</th><th>Missing</th><th>JD Preview</th></tr>
           </thead>
           <tbody>
             ${history.map(h => `
               <tr>
                 <td class="muted small">${new Date(h.date).toLocaleDateString()}</td>
-                <td class="${scoreColorClass(h.score)}">${h.score}%</td>
+                <td class="${cls(h.score)}">${h.score}%</td>
                 <td class="muted small">${h.matched}</td>
                 <td class="muted small">${h.missing}</td>
-                <td class="jd-preview">${escapeHtml(h.jdSnippet)}…</td>
+                <td class="jd-preview-cell">${escapeHtml(h.jdSnippet)}…</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
-        <button class="btn btn-ghost btn-sm" id="clear-history" style="margin-top:10px;">Clear History</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="clear-history" class="history-clear-btn">Clear History</button>
       `;
       document.getElementById('clear-history').addEventListener('click', () => {
         localStorage.removeItem(HISTORY_KEY);
@@ -601,72 +626,56 @@
     }
 
     // ---- Downloads ----
-    function downloadPdf() {
-      window.print();
-    }
+    function downloadPdf() { window.print(); }
 
     function downloadWord() {
-      if (!resumeState) return;
-      const preview = document.getElementById('resume-preview').innerHTML;
+      if (!uploadedHtml) { alert('Upload a resume first.'); return; }
+
+      const addedSection = addedSkills.length
+        ? `<h2 style="color:#065f46;border-top:2px solid #065f46;padding-top:6px;margin-top:20px;">SKILLS TO ADD</h2>
+           <p style="color:#065f46;font-weight:bold">${addedSkills.map(s => escapeHtml(s)).join(', ')}</p>
+           <hr/>`
+        : '';
+
       const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
-        body{font-family:Georgia,serif;font-size:13px;margin:40px;color:#111;line-height:1.5}
-        .r-name{font-size:22px;font-weight:bold;margin-bottom:4px}
-        .r-title-line{font-size:12px;color:#555;font-style:italic;margin-bottom:4px}
-        .r-contact{font-size:11px;color:#444;margin-bottom:14px}
-        .sep{color:#bbb}
-        .r-section{margin-top:14px;border-top:1.5px solid #222;padding-top:5px}
-        .r-section-title{font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.09em;margin-bottom:5px}
-        .r-skills-row{font-size:12px;margin-bottom:2px}
-        .r-exp-item{margin-bottom:10px}
-        .r-exp-head{display:flex;justify-content:space-between}
-        .r-exp-role{font-weight:bold;font-size:12.5px}
-        .r-exp-company{font-style:italic;font-weight:normal}
-        .r-exp-date{font-size:11px;color:#555}
-        .r-exp-loc{font-size:11px;color:#555;font-style:italic}
-        ul{margin:4px 0 0;padding-left:16px}
-        li{margin-bottom:2px;font-size:12px}
-        .r-proj-item{margin-bottom:7px}
-        .r-proj-name{font-weight:bold}
-        .r-proj-tech{color:#555;font-size:11px}
-        .r-proj-desc{font-size:12px;color:#333}
-        .r-edu-item{margin-bottom:6px}
-        .r-edu-degree{font-weight:bold}
-        .r-edu-sub{font-size:11.5px;color:#444}
-        .skill-added{background:#d1fae5;font-weight:bold}
+        body{font-family:Calibri,Arial,sans-serif;font-size:11pt;margin:1in;color:#111;line-height:1.4}
+        h1{font-size:18pt;margin:0 0 4px}
+        h2{font-size:10pt;font-weight:bold;text-transform:uppercase;letter-spacing:.06em;border-bottom:1.5px solid #222;margin:12px 0 4px;padding-bottom:2px}
+        h3{font-size:11pt;margin:6px 0 2px}
+        p{margin:2px 0;font-size:10.5pt}
+        ul{margin:3px 0 0;padding-left:18px}
+        li{margin-bottom:1px;font-size:10.5pt}
         a{color:#1a56db}
-      </style></head><body>${preview}</body></html>`;
+        table{width:100%;border-collapse:collapse}
+        td,th{padding:2px 4px;vertical-align:top}
+      </style></head><body>${addedSection}${uploadedHtml}</body></html>`;
 
       if (typeof htmlDocx !== 'undefined') {
         try {
           const blob = htmlDocx.asBlob(html);
-          const name = (resumeState.name || 'resume').replace(/\s+/g, '_') + '_resume.docx';
+          const name = uploadedFileName.replace(/\.[^.]+$/, '') + '_updated.docx';
           saveAs(blob, name);
           return;
         } catch (e) {
-          console.warn('html-docx-js failed:', e);
+          console.warn('html-docx-js error:', e);
         }
       }
-      // Fallback: download as .html that Word can open
+      // Fallback: .doc (Word-compatible HTML)
       const blob = new Blob([html], { type: 'application/msword' });
-      const name = (resumeState.name || 'resume').replace(/\s+/g, '_') + '_resume.doc';
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = name;
+      a.download = uploadedFileName.replace(/\.[^.]+$/, '') + '_updated.doc';
       a.click();
     }
 
     // ---- Init ----
     (async () => {
       try {
-        [resumeState, skills] = await Promise.all([loadResume(), loadSkills()]);
-        document.getElementById('brand-name').textContent = resumeState.name || 'Portfolio';
-        renderResumePreview();
+        skills = await loadSkills();
+        document.getElementById('stats').textContent = `${skills.length} skills in dictionary · upload your resume to begin`;
         renderHistory();
-        document.getElementById('stats').textContent =
-          `Resume loaded · ${skills.length} skills in dictionary`;
       } catch (err) {
-        document.getElementById('resume-preview').innerHTML = `<p class="muted">Error loading resume: ${escapeHtml(err.message)}</p>`;
-        document.getElementById('stats').textContent = 'Error: ' + err.message;
+        document.getElementById('stats').textContent = 'Error loading skills: ' + err.message;
       }
     })();
 
