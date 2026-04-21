@@ -20,41 +20,48 @@
   </nav>
 
   <main>
-    <section class="hero container-narrow">
-      <h1 id="hero-name">Loading…</h1>
-      <p class="subtitle" id="hero-title"></p>
-      <p class="tagline" id="hero-tagline"></p>
-      <div class="hero-actions" id="hero-actions"></div>
-    </section>
+    <div class="container-narrow">
+      <div class="profile-hero">
+        <div class="avatar" id="hero-avatar">SD</div>
+        <div class="profile-info">
+          <div class="status-badge"><span class="pulse"></span>Open to Opportunities</div>
+          <h1 id="hero-name">Loading…</h1>
+          <p class="subtitle" id="hero-title"></p>
+          <p class="hero-location" id="hero-location"></p>
+          <p class="tagline" id="hero-tagline"></p>
+          <div class="social-links" id="hero-actions"></div>
+        </div>
+      </div>
+    </div>
 
     <section class="section container-narrow" id="summary-section">
-      <h2>Summary</h2>
+      <div class="section-header"><div class="section-dot"></div><h2>Summary</h2></div>
       <p id="summary-body" class="muted"></p>
     </section>
 
     <section class="section container-narrow" id="skills-section">
-      <h2>Skills</h2>
+      <div class="section-header"><div class="section-dot"></div><h2>Skills</h2></div>
       <div id="skills-body"></div>
     </section>
 
     <section class="section container-narrow" id="experience-section">
-      <h2>Experience</h2>
+      <div class="section-header"><div class="section-dot"></div><h2>Experience</h2></div>
       <div id="experience-body"></div>
     </section>
 
     <section class="section container-narrow" id="projects-section">
-      <h2>Projects</h2>
+      <div class="section-header"><div class="section-dot"></div><h2>Projects</h2></div>
       <div id="projects-body"></div>
     </section>
 
     <section class="section container-narrow" id="education-section">
-      <h2>Education</h2>
+      <div class="section-header"><div class="section-dot"></div><h2>Education</h2></div>
       <div id="education-body"></div>
     </section>
   </main>
 
   <footer class="footer">
-    Built with static HTML + JSON. <a href="jobs.html">See today's jobs →</a>
+    Built with static HTML + JSON · <a href="jobs.html">See today's jobs →</a>
   </footer>
 
   <script type="module">
@@ -70,18 +77,20 @@
         document.getElementById('hero-name').textContent = r.name;
         document.getElementById('hero-title').textContent = r.title || '';
         document.getElementById('hero-tagline').textContent = r.tagline || '';
+        document.getElementById('hero-location').textContent = r.location || '';
 
-        // Hero actions
+        const initials = (r.name || 'SD').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+        document.getElementById('hero-avatar').textContent = initials;
+
         const actions = [];
-        if (r.links?.resume_pdf) actions.push(`<a class="btn" href="${escapeHtml(r.links.resume_pdf)}" target="_blank" rel="noopener">Download resume</a>`);
-        if (r.email) actions.push(`<a class="btn btn-ghost" href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>`);
-        if (r.links?.github) actions.push(`<a class="btn btn-ghost" href="${escapeHtml(r.links.github)}" target="_blank" rel="noopener">GitHub</a>`);
-        if (r.links?.linkedin) actions.push(`<a class="btn btn-ghost" href="${escapeHtml(r.links.linkedin)}" target="_blank" rel="noopener">LinkedIn</a>`);
+        if (r.links?.linkedin) actions.push(`<a class="social-link primary" href="${escapeHtml(r.links.linkedin)}" target="_blank" rel="noopener">LinkedIn</a>`);
+        if (r.links?.github) actions.push(`<a class="social-link" href="${escapeHtml(r.links.github)}" target="_blank" rel="noopener">GitHub</a>`);
+        if (r.email) actions.push(`<a class="social-link" href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>`);
+        if (r.links?.resume_pdf) actions.push(`<a class="social-link" href="${escapeHtml(r.links.resume_pdf)}" target="_blank" rel="noopener">Resume PDF</a>`);
         document.getElementById('hero-actions').innerHTML = actions.join('');
 
         document.getElementById('summary-body').textContent = r.summary || '';
 
-        // Skills
         const skillsEl = document.getElementById('skills-body');
         const skillsHtml = Object.entries(r.skills || {}).map(([group, list]) => {
           if (!Array.isArray(list) || list.length === 0) return '';
@@ -96,7 +105,6 @@
         }).join('');
         skillsEl.innerHTML = skillsHtml || '<p class="muted">No skills listed.</p>';
 
-        // Experience
         const expEl = document.getElementById('experience-body');
         expEl.innerHTML = (r.experience || []).map(e => `
           <div class="card">
@@ -113,7 +121,6 @@
           </div>
         `).join('') || '<p class="muted">Coming soon.</p>';
 
-        // Projects
         const projEl = document.getElementById('projects-body');
         projEl.innerHTML = `
           <div class="grid-2">
@@ -131,7 +138,6 @@
           </div>
         `;
 
-        // Education
         const eduEl = document.getElementById('education-body');
         eduEl.innerHTML = (r.education || []).map(ed => `
           <div class="card">

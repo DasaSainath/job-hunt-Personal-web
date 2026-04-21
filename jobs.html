@@ -19,10 +19,32 @@
   </nav>
 
   <main class="container">
-    <section class="hero">
-      <h1>Daily Job Dashboard</h1>
-      <p class="subtitle" id="status-line">Loading jobs…</p>
-    </section>
+    <div class="dash-header">
+      <div>
+        <h1>Job Dashboard</h1>
+        <p class="muted" id="status-line">Loading jobs…</p>
+      </div>
+      <span class="last-updated" id="updated-at"></span>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card accent-blue">
+        <div class="stat-number" id="stat-total">—</div>
+        <div class="stat-label">Total Jobs</div>
+      </div>
+      <div class="stat-card accent-green">
+        <div class="stat-number" id="stat-high">—</div>
+        <div class="stat-label">High Match ≥70%</div>
+      </div>
+      <div class="stat-card accent-warn">
+        <div class="stat-number" id="stat-mid">—</div>
+        <div class="stat-label">Medium 50–69%</div>
+      </div>
+      <div class="stat-card accent-purple">
+        <div class="stat-number" id="stat-new">—</div>
+        <div class="stat-label">New Today</div>
+      </div>
+    </div>
 
     <div class="filters">
       <label for="q">Search</label>
@@ -50,7 +72,7 @@
   </main>
 
   <footer class="footer">
-    <span id="updated-at"></span> · Feed refreshes daily via GitHub Actions.
+    Feed refreshes daily via GitHub Actions.
   </footer>
 
   <script type="module">
@@ -59,11 +81,7 @@
 
     markActiveNav();
 
-    const state = {
-      jobs: [],
-      filtered: [],
-      sources: new Set()
-    };
+    const state = { jobs: [], filtered: [] };
 
     function render() {
       const q = document.getElementById('q').value.trim().toLowerCase();
@@ -86,6 +104,7 @@
 
       state.filtered = list;
       const container = document.getElementById('jobs-list');
+
       if (list.length === 0) {
         container.innerHTML = `<div class="empty">No jobs match these filters. Try lowering the minimum match %.</div>`;
         return;
@@ -109,6 +128,10 @@
                 ${(j.missingSkills || []).slice(0, 4).map(s => `<span class="chip missing">${escapeHtml(s)}</span>`).join('')}
               </div>
               <p class="job-desc">${escapeHtml(truncate(stripHtml(j.description || ''), 400))}</p>
+              <div class="job-actions">
+                <a class="btn-apply" href="${escapeHtml(j.url || '#')}" target="_blank" rel="noopener">Apply →</a>
+                <a class="btn btn-ghost btn-sm" href="matcher.html">Check Match</a>
+              </div>
             </div>
             <div class="score ${scoreClass(j.matchScore)}">${j.matchScore}%</div>
           </div>
@@ -121,19 +144,20 @@
         const [resume, feed, skills] = await Promise.all([loadResume(), loadAllJobs(), loadSkills()]);
         document.getElementById('brand-name').textContent = resume.name || 'Portfolio';
         const resumeText = resumeToText(resume);
+        const today = new Date().toDateString();
 
         const jobs = (feed.jobs || []).map(j => {
           const jdText = [j.title, j.description].filter(Boolean).join(' \n ');
           const m = matchResumeToJD(resumeText, jdText, skills);
-          return {
-            ...j,
-            matchScore: m.score,
-            matchedSkills: m.matchedSkills,
-            missingSkills: m.missingSkills
-          };
+          return { ...j, matchScore: m.score, matchedSkills: m.matchedSkills, missingSkills: m.missingSkills };
         });
 
         state.jobs = jobs;
+
+        document.getElementById('stat-total').textContent = jobs.length;
+        document.getElementById('stat-high').textContent = jobs.filter(j => j.matchScore >= 70).length;
+        document.getElementById('stat-mid').textContent = jobs.filter(j => j.matchScore >= 50 && j.matchScore < 70).length;
+        document.getElementById('stat-new').textContent = jobs.filter(j => j.posted && new Date(j.posted).toDateString() === today).length;
 
         const sources = new Set(jobs.map(j => j.source).filter(Boolean));
         const srcSel = document.getElementById('source');
@@ -144,7 +168,7 @@
         });
 
         document.getElementById('status-line').textContent =
-          `${jobs.length} job${jobs.length === 1 ? '' : 's'} loaded · ranked against your resume`;
+          `${jobs.length} job${jobs.length === 1 ? '' : 's'} · ranked against your resume`;
         document.getElementById('updated-at').textContent =
           feed.updated_at ? `Last updated ${feed.updated_at}` : 'Run the GitHub Action to populate jobs';
 
