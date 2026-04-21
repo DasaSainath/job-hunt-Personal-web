@@ -1,0 +1,108 @@
+// Shared utilities for all pages.
+// Uses the Fetch API to load JSON from data/ so the site works on GitHub Pages
+// without any build step.
+
+export async function loadJSON(path) {
+  const res = await fetch(path, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
+  return res.json();
+}
+
+export async function loadResume() {
+  return loadJSON('data/resume.json');
+}
+
+export async function loadAllJobs() {
+  const [feed, manual] = await Promise.all([
+    loadJSON('data/jobs.json').catch(() => ({ jobs: [] })),
+    loadJSON('data/manual-jobs.json').catch(() => ({ jobs: [] }))
+  ]);
+  const feedJobs = (feed.jobs || []).map(j => ({ ...j, _manual: false }));
+  const manualJobs = (manual.jobs || [])
+    .filter(j => j.id !== 'manual-example-1')  // hide the placeholder
+    .map(j => ({ ...j, _manual: true }));
+  return {
+    updated_at: feed.updated_at || '',
+    jobs: [...manualJobs, ...feedJobs]
+  };
+}
+
+export async function loadSkills() {
+  const data = await loadJSON('data/skills.json');
+  return data.skills || [];
+}
+
+// Flatten resume into a single searchable text blob (used by the matcher).
+export function resumeToText(resume) {
+  const parts = [
+    resume.title || '',
+    resume.tagline || '',
+    resume.summary || ''
+  ];
+  const s = resume.skills || {};
+  Object.values(s).forEach(arr => {
+    if (Array.isArray(arr)) parts.push(arr.join(' '));
+  });
+  (resume.experience || []).forEach(e => {
+    parts.push(e.role || '', e.company || '');
+    (e.bullets || []).forEach(b => parts.push(b));
+  });
+  (resume.projects || []).forEach(p => {
+    parts.push(p.name || '', p.description || '');
+    (p.tech || []).forEach(t => parts.push(t));
+  });
+  (resume.education || []).forEach(ed => {
+    parts.push(ed.degree || '', ed.school || '');
+  });
+  return parts.join(' \n ');
+}
+
+export function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+export function stripHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+export function truncate(s, n = 280) {
+  if (!s) return '';
+  return s.length <= n ? s : s.slice(0, n).trim() + '…';
+}
+
+export function formatDate(s) {
+  if (!s) return '';
+  const d = new Date(s);
+  if (isNaN(d)) return s;
+  const now = new Date();
+  const diffDays = Math.floor((now - d) / 86400000);
+  if (diffDays === 0) return 'today';
+  if (diffDays === 1) return 'yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+export function scoreClass(score) {
+  if (score >= 70) return 'high';
+  if (score >= 40) return 'mid';
+  return 'low';
+}
+
+// Simple router that highlights the active nav link.
+export function markActiveNav() {
+  const here = location.pathname.split('/').pop() || 'index.html';
+  document.querySelectorAll('.nav-links a').forEach(a => {
+    const target = a.getAttribute('href');
+    if (target === here || (target === 'index.html' && here === '')) {
+      a.classList.add('active');
+    }
+  });
+}

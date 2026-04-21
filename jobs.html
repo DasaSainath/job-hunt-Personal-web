@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jobs Dashboard</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-brand"><span class="dot"></span><span id="brand-name">Portfolio</span></a>
+      <div class="nav-links">
+        <a href="index.html">About</a>
+        <a href="jobs.html">Jobs</a>
+        <a href="matcher.html">Matcher</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Daily Job Dashboard</h1>
+      <p class="subtitle" id="status-line">Loading jobs…</p>
+    </section>
+
+    <div class="filters">
+      <label for="q">Search</label>
+      <input id="q" type="text" placeholder="title, company, skill…" />
+
+      <label for="source">Source</label>
+      <select id="source"><option value="">All</option></select>
+
+      <label for="min-score">Min match %</label>
+      <select id="min-score">
+        <option value="0">0</option>
+        <option value="30">30</option>
+        <option value="50" selected>50</option>
+        <option value="70">70</option>
+      </select>
+
+      <label for="sort">Sort</label>
+      <select id="sort">
+        <option value="match">Best match</option>
+        <option value="date">Newest</option>
+      </select>
+    </div>
+
+    <div id="jobs-list"><div class="loading">Loading…</div></div>
+  </main>
+
+  <footer class="footer">
+    <span id="updated-at"></span> · Feed refreshes daily via GitHub Actions.
+  </footer>
+
+  <script type="module">
+    import { loadResume, loadAllJobs, loadSkills, resumeToText, escapeHtml, stripHtml, truncate, formatDate, scoreClass, markActiveNav } from './js/common.js';
+    import { matchResumeToJD } from './js/matcher.js';
+
+    markActiveNav();
+
+    const state = {
+      jobs: [],
+      filtered: [],
+      sources: new Set()
+    };
+
+    function render() {
+      const q = document.getElementById('q').value.trim().toLowerCase();
+      const srcFilter = document.getElementById('source').value;
+      const minScore = parseInt(document.getElementById('min-score').value, 10);
+      const sort = document.getElementById('sort').value;
+
+      let list = state.jobs.filter(j => {
+        if (srcFilter && j.source !== srcFilter) return false;
+        if (j.matchScore < minScore) return false;
+        if (q) {
+          const hay = `${j.title} ${j.company} ${j.location} ${(j.matchedSkills||[]).join(' ')}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      if (sort === 'match') list.sort((a, b) => b.matchScore - a.matchScore);
+      else list.sort((a, b) => new Date(b.posted || 0) - new Date(a.posted || 0));
+
+      state.filtered = list;
+      const container = document.getElementById('jobs-list');
+      if (list.length === 0) {
+        container.innerHTML = `<div class="empty">No jobs match these filters. Try lowering the minimum match %.</div>`;
+        return;
+      }
+
+      container.innerHTML = list.map(j => `
+        <div class="job-card">
+          <div class="job-head">
+            <div style="flex:1">
+              <h3 class="job-title">
+                <a href="${escapeHtml(j.url || '#')}" target="_blank" rel="noopener">${escapeHtml(j.title || '(untitled)')}</a>
+              </h3>
+              <p class="job-meta">
+                ${escapeHtml(j.company || '')}
+                ${j.location ? ' · ' + escapeHtml(j.location) : ''}
+                <span class="source-badge">${escapeHtml(j.source || '')}</span>
+                ${j.posted ? '<span class="small muted"> · ' + escapeHtml(formatDate(j.posted)) + '</span>' : ''}
+              </p>
+              <div class="chip-row">
+                ${(j.matchedSkills || []).slice(0, 6).map(s => `<span class="chip matched">${escapeHtml(s)}</span>`).join('')}
+                ${(j.missingSkills || []).slice(0, 4).map(s => `<span class="chip missing">${escapeHtml(s)}</span>`).join('')}
+              </div>
+              <p class="job-desc">${escapeHtml(truncate(stripHtml(j.description || ''), 400))}</p>
+            </div>
+            <div class="score ${scoreClass(j.matchScore)}">${j.matchScore}%</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    (async () => {
+      try {
+        const [resume, feed, skills] = await Promise.all([loadResume(), loadAllJobs(), loadSkills()]);
+        document.getElementById('brand-name').textContent = resume.name || 'Portfolio';
+        const resumeText = resumeToText(resume);
+
+        const jobs = (feed.jobs || []).map(j => {
+          const jdText = [j.title, j.description].filter(Boolean).join(' \n ');
+          const m = matchResumeToJD(resumeText, jdText, skills);
+          return {
+            ...j,
+            matchScore: m.score,
+            matchedSkills: m.matchedSkills,
+            missingSkills: m.missingSkills
+          };
+        });
+
+        state.jobs = jobs;
+
+        const sources = new Set(jobs.map(j => j.source).filter(Boolean));
+        const srcSel = document.getElementById('source');
+        [...sources].sort().forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s; opt.textContent = s;
+          srcSel.appendChild(opt);
+        });
+
+        document.getElementById('status-line').textContent =
+          `${jobs.length} job${jobs.length === 1 ? '' : 's'} loaded · ranked against your resume`;
+        document.getElementById('updated-at').textContent =
+          feed.updated_at ? `Last updated ${feed.updated_at}` : 'Run the GitHub Action to populate jobs';
+
+        ['q', 'source', 'min-score', 'sort'].forEach(id =>
+          document.getElementById(id).addEventListener('input', render));
+
+        render();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('jobs-list').innerHTML =
+          `<div class="empty">Error loading jobs: ${escapeHtml(err.message)}<br /><br />
+           Make sure <code>data/jobs.json</code> exists. The GitHub Action creates it on its first run.</div>`;
+      }
+    })();
+  </script>
+</body>
+</html>

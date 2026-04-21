@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resume Matcher</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-brand"><span class="dot"></span><span id="brand-name">Portfolio</span></a>
+      <div class="nav-links">
+        <a href="index.html">About</a>
+        <a href="jobs.html">Jobs</a>
+        <a href="matcher.html">Matcher</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container-narrow">
+    <section class="hero">
+      <h1>Resume ↔ JD Matcher</h1>
+      <p class="subtitle">Paste any job description. See your match %, which skills hit, which are missing, and what to add.</p>
+    </section>
+
+    <section>
+      <label for="jd" class="muted small">Job description</label>
+      <textarea id="jd" class="jd-input" placeholder="Paste the full job description here…"></textarea>
+      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button id="run-btn" class="btn">Analyze</button>
+        <button id="clear-btn" class="btn btn-ghost">Clear</button>
+        <span id="stats" class="muted small" style="align-self:center;"></span>
+      </div>
+    </section>
+
+    <section id="results" style="display:none;">
+      <div class="match-summary">
+        <div class="score" id="final-score">—</div>
+        <div class="score-details">
+          <h3 id="headline">—</h3>
+          <p id="breakdown" class="muted"></p>
+        </div>
+      </div>
+
+      <h2 class="section-h">Matched skills</h2>
+      <div id="matched" class="chip-row"></div>
+
+      <h2 class="section-h">Missing skills (in JD, not in your resume)</h2>
+      <div id="missing" class="chip-row"></div>
+
+      <h2 class="section-h">JD keywords to mirror</h2>
+      <p class="muted small">Distinctive terms the JD uses that your resume doesn't. ATS systems score against the JD's own language — use these exact words where they're truthful.</p>
+      <div id="keywords" class="chip-row"></div>
+
+      <h2 class="section-h">Suggestions</h2>
+      <div id="suggestions"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    Matching runs in your browser. Nothing is uploaded.
+  </footer>
+
+  <style>
+    .section-h { margin-top: 28px; font-size: 1.1rem; }
+  </style>
+
+  <script type="module">
+    import { loadResume, loadSkills, resumeToText, escapeHtml, scoreClass, markActiveNav } from './js/common.js';
+    import { matchResumeToJD } from './js/matcher.js';
+
+    markActiveNav();
+
+    let resume = null;
+    let resumeText = '';
+    let skills = [];
+
+    (async () => {
+      try {
+        [resume, skills] = await Promise.all([loadResume(), loadSkills()]);
+        document.getElementById('brand-name').textContent = resume.name || 'Portfolio';
+        resumeText = resumeToText(resume);
+        document.getElementById('stats').textContent =
+          `Ready · resume loaded (${resumeText.length.toLocaleString()} chars, ${skills.length} skills in dictionary)`;
+      } catch (err) {
+        document.getElementById('stats').textContent = 'Error: ' + err.message;
+      }
+    })();
+
+    function analyze() {
+      const jd = document.getElementById('jd').value.trim();
+      if (!jd) {
+        alert('Paste a job description first.');
+        return;
+      }
+      if (!resume) {
+        alert('Resume not loaded yet. Try again in a second.');
+        return;
+      }
+      const r = matchResumeToJD(resumeText, jd, skills);
+
+      const results = document.getElementById('results');
+      results.style.display = '';
+
+      const scoreEl = document.getElementById('final-score');
+      scoreEl.textContent = r.score + '%';
+      scoreEl.className = 'score ' + scoreClass(r.score);
+
+      let headline;
+      if (r.score >= 75) headline = 'Strong match — apply today.';
+      else if (r.score >= 55) headline = 'Good match — worth a tailored application.';
+      else if (r.score >= 35) headline = 'Partial match — tailor heavily or skip.';
+      else headline = 'Weak match — probably not worth the time.';
+      document.getElementById('headline').textContent = headline;
+
+      const parts = [];
+      if (r.skillOverlapPct !== null) parts.push(`Skill overlap: ${r.skillOverlapPct}% (${r.stats.jdSkillCount} skills detected in JD)`);
+      parts.push(`Content similarity: ${r.contentSimPct}%`);
+      document.getElementById('breakdown').textContent = parts.join(' · ');
+
+      document.getElementById('matched').innerHTML =
+        r.matchedSkills.length
+          ? r.matchedSkills.map(s => `<span class="chip matched">${escapeHtml(s)}</span>`).join('')
+          : '<span class="muted small">No matches — either your resume doesn\'t list them or the JD uses unrecognized terms.</span>';
+
+      document.getElementById('missing').innerHTML =
+        r.missingSkills.length
+          ? r.missingSkills.map(s => `<span class="chip missing">${escapeHtml(s)}</span>`).join('')
+          : '<span class="muted small">Your resume covers every skill the JD mentions. 🎯</span>';
+
+      document.getElementById('keywords').innerHTML =
+        r.jdOnlyKeywords.length
+          ? r.jdOnlyKeywords.map(k => `<span class="chip">${escapeHtml(k.term)}</span>`).join('')
+          : '<span class="muted small">No distinctive JD-only terms.</span>';
+
+      document.getElementById('suggestions').innerHTML = r.suggestions.map(s => `
+        <div class="card">
+          <p class="card-title">${escapeHtml(s.title)}</p>
+          <p class="card-body muted">${escapeHtml(s.detail)}</p>
+        </div>
+      `).join('') || '<p class="muted">No suggestions — you\'re well-aligned.</p>';
+
+      results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    document.getElementById('run-btn').addEventListener('click', analyze);
+    document.getElementById('clear-btn').addEventListener('click', () => {
+      document.getElementById('jd').value = '';
+      document.getElementById('results').style.display = 'none';
+    });
+    document.getElementById('jd').addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') analyze();
+    });
+  </script>
+</body>
+</html>

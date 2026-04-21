@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sainath Dasa — Software Engineer</title>
+  <meta name="description" content="Portfolio, resume, and project showcase." />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-brand"><span class="dot"></span><span id="brand-name">Portfolio</span></a>
+      <div class="nav-links">
+        <a href="index.html">About</a>
+        <a href="jobs.html">Jobs</a>
+        <a href="matcher.html">Matcher</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <section class="hero container-narrow">
+      <h1 id="hero-name">Loading…</h1>
+      <p class="subtitle" id="hero-title"></p>
+      <p class="tagline" id="hero-tagline"></p>
+      <div class="hero-actions" id="hero-actions"></div>
+    </section>
+
+    <section class="section container-narrow" id="summary-section">
+      <h2>Summary</h2>
+      <p id="summary-body" class="muted"></p>
+    </section>
+
+    <section class="section container-narrow" id="skills-section">
+      <h2>Skills</h2>
+      <div id="skills-body"></div>
+    </section>
+
+    <section class="section container-narrow" id="experience-section">
+      <h2>Experience</h2>
+      <div id="experience-body"></div>
+    </section>
+
+    <section class="section container-narrow" id="projects-section">
+      <h2>Projects</h2>
+      <div id="projects-body"></div>
+    </section>
+
+    <section class="section container-narrow" id="education-section">
+      <h2>Education</h2>
+      <div id="education-body"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    Built with static HTML + JSON. <a href="jobs.html">See today's jobs →</a>
+  </footer>
+
+  <script type="module">
+    import { loadResume, escapeHtml, markActiveNav } from './js/common.js';
+
+    markActiveNav();
+
+    (async () => {
+      try {
+        const r = await loadResume();
+        document.title = `${r.name} — ${r.title}`;
+        document.getElementById('brand-name').textContent = r.name;
+        document.getElementById('hero-name').textContent = r.name;
+        document.getElementById('hero-title').textContent = r.title || '';
+        document.getElementById('hero-tagline').textContent = r.tagline || '';
+
+        // Hero actions
+        const actions = [];
+        if (r.links?.resume_pdf) actions.push(`<a class="btn" href="${escapeHtml(r.links.resume_pdf)}" target="_blank" rel="noopener">Download resume</a>`);
+        if (r.email) actions.push(`<a class="btn btn-ghost" href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>`);
+        if (r.links?.github) actions.push(`<a class="btn btn-ghost" href="${escapeHtml(r.links.github)}" target="_blank" rel="noopener">GitHub</a>`);
+        if (r.links?.linkedin) actions.push(`<a class="btn btn-ghost" href="${escapeHtml(r.links.linkedin)}" target="_blank" rel="noopener">LinkedIn</a>`);
+        document.getElementById('hero-actions').innerHTML = actions.join('');
+
+        document.getElementById('summary-body').textContent = r.summary || '';
+
+        // Skills
+        const skillsEl = document.getElementById('skills-body');
+        const skillsHtml = Object.entries(r.skills || {}).map(([group, list]) => {
+          if (!Array.isArray(list) || list.length === 0) return '';
+          const label = group.charAt(0).toUpperCase() + group.slice(1);
+          return `
+            <div class="skill-group">
+              <div class="skill-group-label">${escapeHtml(label)}</div>
+              <div class="chip-row">
+                ${list.map(s => `<span class="chip">${escapeHtml(s)}</span>`).join('')}
+              </div>
+            </div>`;
+        }).join('');
+        skillsEl.innerHTML = skillsHtml || '<p class="muted">No skills listed.</p>';
+
+        // Experience
+        const expEl = document.getElementById('experience-body');
+        expEl.innerHTML = (r.experience || []).map(e => `
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <p class="card-title">${escapeHtml(e.role || '')} · <span class="muted">${escapeHtml(e.company || '')}</span></p>
+                <p class="card-sub">${escapeHtml(e.location || '')}</p>
+              </div>
+              <p class="muted small">${escapeHtml(e.start || '')} – ${escapeHtml(e.end || '')}</p>
+            </div>
+            <ul>
+              ${(e.bullets || []).map(b => `<li>${escapeHtml(b)}</li>`).join('')}
+            </ul>
+          </div>
+        `).join('') || '<p class="muted">Coming soon.</p>';
+
+        // Projects
+        const projEl = document.getElementById('projects-body');
+        projEl.innerHTML = `
+          <div class="grid-2">
+            ${(r.projects || []).map(p => `
+              <div class="card">
+                <p class="card-title">
+                  ${p.link ? `<a href="${escapeHtml(p.link)}" target="_blank" rel="noopener">${escapeHtml(p.name || '')}</a>` : escapeHtml(p.name || '')}
+                </p>
+                <p class="card-body">${escapeHtml(p.description || '')}</p>
+                <div class="chip-row">
+                  ${(p.tech || []).map(t => `<span class="chip">${escapeHtml(t)}</span>`).join('')}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+
+        // Education
+        const eduEl = document.getElementById('education-body');
+        eduEl.innerHTML = (r.education || []).map(ed => `
+          <div class="card">
+            <p class="card-title">${escapeHtml(ed.degree || '')}</p>
+            <p class="card-sub">${escapeHtml(ed.school || '')} · ${escapeHtml(ed.location || '')} · ${escapeHtml(ed.year || '')}</p>
+          </div>
+        `).join('') || '<p class="muted">Coming soon.</p>';
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('hero-name').textContent = 'Error loading resume';
+        document.getElementById('hero-title').textContent = err.message;
+      }
+    })();
+  </script>
+</body>
+</html>

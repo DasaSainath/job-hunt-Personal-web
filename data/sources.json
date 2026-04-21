@@ -1,0 +1,64 @@
+{
+  "_comment": "Controls the daily fetcher. 'keywords' filters what counts as relevant. 'enabled' sources are queried. Add/remove as needed.",
+  "keywords": [
+    "software engineer",
+    "backend",
+    "full stack",
+    "full-stack",
+    "python",
+    "javascript",
+    "typescript",
+    "react",
+    "node",
+    "java",
+    "data engineer",
+    "machine learning",
+    "cloud"
+  ],
+  "exclude_keywords": [
+    "senior manager",
+    "director",
+    "vp ",
+    "principal (15+"
+  ],
+  "remote_only": false,
+  "max_age_days": 7,
+  "max_jobs_per_source": 50,
+  "sources": [
+    {
+      "id": "remoteok",
+      "name": "RemoteOK",
+      "type": "json_api",
+      "url": "https://remoteok.com/api",
+      "enabled": true
+    },
+    {
+      "id": "remotive",
+      "name": "Remotive",
+      "type": "json_api",
+      "url": "https://remotive.com/api/remote-jobs",
+      "enabled": true
+    },
+    {
+      "id": "arbeitnow",
+      "name": "Arbeitnow",
+      "type": "json_api",
+      "url": "https://www.arbeitnow.com/api/job-board-api",
+      "enabled": true
+    },
+    {
+      "id": "wwr_programming",
+      "name": "WeWorkRemotely - Programming",
+      "type": "rss",
+      "url": "https://weworkremotely.com/categories/remote-programming-jobs.rss",
+      "enabled": true
+    },
+    {
+      "id": "wwr_fullstack",
+      "name": "WeWorkRemotely - Full Stack",
+      "type": "rss",
+      "url": "https://weworkremotely.com/categories/remote-full-stack-programming-jobs.rss",
+      "enabled": true
+    }
+  ]
+}

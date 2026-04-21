@@ -1,0 +1,70 @@
+{
+  "name": "Sainath Dasa",
+  "title": "Software Engineer",
+  "tagline": "Building reliable backend systems and thoughtful user experiences.",
+  "location": "United States",
+  "email": "sainath.unf219@gmail.com",
+  "phone": "",
+  "links": {
+    "github": "https://github.com/your-username",
+    "linkedin": "https://linkedin.com/in/your-username",
+    "website": "https://your-username.github.io",
+    "resume_pdf": "assets/resume.pdf"
+  },
+  "summary": "Software engineer with experience across full-stack development, data engineering, and cloud deployment. Passionate about shipping clean, maintainable code and solving real user problems.",
+  "skills": {
+    "languages": ["Python", "JavaScript", "TypeScript", "Java", "SQL"],
+    "frameworks": ["React", "Node.js", "Express", "Flask", "FastAPI"],
+    "cloud": ["AWS", "Docker", "Kubernetes", "GitHub Actions"],
+    "databases": ["PostgreSQL", "MongoDB", "Redis"],
+    "tools": ["Git", "Linux", "REST APIs", "GraphQL"]
+  },
+  "experience": [
+    {
+      "role": "Software Engineer",
+      "company": "Your Most Recent Company",
+      "location": "City, State",
+      "start": "2023",
+      "end": "Present",
+      "bullets": [
+        "Describe a result you drove — numbers, scope, impact.",
+        "Describe a technical system you built — tech stack, scale.",
+        "Describe a cross-functional win — who you worked with, what shipped."
+      ]
+    },
+    {
+      "role": "Previous Role",
+      "company": "Previous Company",
+      "location": "City, State",
+      "start": "2021",
+      "end": "2023",
+      "bullets": [
+        "Bullet with a metric.",
+        "Bullet with a technology + impact.",
+        "Bullet about collaboration or leadership."
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Job Hub",
+      "description": "This site. Static portfolio + daily job aggregator + resume-to-JD matcher. Python fetcher runs in GitHub Actions; client-side matcher uses TF-IDF and skills-dictionary overlap.",
+      "tech": ["HTML", "JavaScript", "Python", "GitHub Actions"],
+      "link": "https://github.com/your-username/your-username.github.io"
+    }
+  ],
+  "education": [
+    {
+      "degree": "M.S. in Computer Science",
+      "school": "University Name",
+      "location": "City, State",
+      "year": "2023"
+    },
+    {
+      "degree": "B.S. in Computer Science",
+      "school": "University Name",
+      "location": "City, State",
+      "year": "2021"
+    }
+  ]
+}

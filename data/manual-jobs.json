@@ -1,0 +1,15 @@
+{
+  "_comment": "Paste jobs from LinkedIn/Indeed/any site here. They'll show up in jobs.html like any other source. Copy the description text so the matcher has something to score against.",
+  "jobs": [
+    {
+      "id": "manual-example-1",
+      "title": "Example: Senior Software Engineer",
+      "company": "Example Corp",
+      "location": "Remote",
+      "url": "https://linkedin.com/jobs/view/XXXXXXX",
+      "source": "LinkedIn (manual)",
+      "posted": "2026-04-21",
+      "description": "Paste the full job description here so the matcher can score it. Delete this example entry when you add your first real one."
+    }
+  ]
+}
