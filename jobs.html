@@ -27,6 +27,7 @@
       <span class="last-updated" id="updated-at"></span>
     </div>
 
+    <!-- Stat cards -->
     <div class="stat-grid">
       <div class="stat-card accent-blue">
         <div class="stat-number" id="stat-total">—</div>
@@ -44,31 +45,62 @@
         <div class="stat-number" id="stat-new">—</div>
         <div class="stat-label">New Today</div>
       </div>
+      <div class="stat-card accent-teal">
+        <div class="stat-number" id="stat-applied">0</div>
+        <div class="stat-label">Applied Today</div>
+      </div>
     </div>
 
+    <!-- Time filter buttons -->
     <div class="filters">
+      <span class="time-filter-label">Posted within</span>
+      <div class="time-filter-group">
+        <button type="button" class="time-btn active" data-hours="0">All</button>
+        <button type="button" class="time-btn" data-hours="24">24h</button>
+        <button type="button" class="time-btn" data-hours="48">48h</button>
+        <button type="button" class="time-btn" data-hours="168">7d</button>
+      </div>
+
       <label for="q">Search</label>
       <input id="q" type="text" placeholder="title, company, skill…" />
 
       <label for="source">Source</label>
-      <select id="source"><option value="">All</option></select>
+      <select id="source"><option value="">All sources</option></select>
 
       <label for="min-score">Min match %</label>
       <select id="min-score">
-        <option value="0">0</option>
-        <option value="30">30</option>
-        <option value="50" selected>50</option>
-        <option value="70">70</option>
+        <option value="0">Any</option>
+        <option value="30">30%+</option>
+        <option value="50" selected>50%+</option>
+        <option value="70">70%+</option>
       </select>
 
       <label for="sort">Sort</label>
       <select id="sort">
         <option value="match">Best match</option>
-        <option value="date">Newest</option>
+        <option value="date">Newest first</option>
+        <option value="applied">Applied first</option>
       </select>
+
+      <label class="filter-check-label">
+        <input type="checkbox" id="applied-only" /> Applied only
+      </label>
     </div>
 
     <div id="jobs-list"><div class="loading">Loading…</div></div>
+
+    <!-- Applications log -->
+    <section class="apps-log-section">
+      <div class="section-header">
+        <div class="section-dot section-dot-green"></div>
+        <h2>Applications Log</h2>
+        <span class="muted small" id="apps-count"></span>
+        <button type="button" class="btn btn-ghost btn-sm apps-clear-btn" id="clear-apps">Clear Log</button>
+      </div>
+      <div id="apps-log-body">
+        <p class="muted small">No applications yet — click <strong>Apply →</strong> on any job card to start tracking.</p>
+      </div>
+    </section>
   </main>
 
   <footer class="footer">
@@ -81,17 +113,95 @@
 
     markActiveNav();
 
-    const state = { jobs: [], filtered: [] };
+    const APPS_KEY = 'jh_applications';
+    const state = { jobs: [] };
+    let activeHours = 0;
 
+    // ---- Deduplication ----
+    function normalizeStr(s) {
+      return (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+
+    function deduplicateJobs(jobs) {
+      const seenUrls = new Set();
+      const seenTitleCo = new Set();
+      return jobs.filter(j => {
+        const urlKey = (j.url || '').toLowerCase();
+        const tcKey = normalizeStr(j.title) + '|' + normalizeStr(j.company);
+        if (urlKey && seenUrls.has(urlKey)) return false;
+        if (tcKey.length > 2 && seenTitleCo.has(tcKey)) return false;
+        if (urlKey) seenUrls.add(urlKey);
+        if (tcKey.length > 2) seenTitleCo.add(tcKey);
+        return true;
+      });
+    }
+
+    // ---- Application storage ----
+    function getApps() {
+      try { return JSON.parse(localStorage.getItem(APPS_KEY) || '[]'); } catch { return []; }
+    }
+    function isApplied(url) { return getApps().some(a => a.url === url); }
+    function getAppliedDate(url) {
+      const a = getApps().find(a => a.url === url);
+      return a ? new Date(a.appliedAt).toLocaleDateString() : '';
+    }
+
+    function applyJob(job) {
+      const apps = getApps();
+      if (!apps.some(a => a.url === job.url)) {
+        apps.unshift({ url: job.url, title: job.title, company: job.company, source: job.source, matchScore: job.matchScore, appliedAt: new Date().toISOString() });
+        localStorage.setItem(APPS_KEY, JSON.stringify(apps.slice(0, 300)));
+      }
+      window.open(job.url, '_blank', 'noopener,noreferrer');
+      updateAppliedStat();
+      render();
+      renderAppsLog();
+    }
+
+    function removeApp(url) {
+      localStorage.setItem(APPS_KEY, JSON.stringify(getApps().filter(a => a.url !== url)));
+      updateAppliedStat();
+      render();
+      renderAppsLog();
+    }
+
+    function updateAppliedStat() {
+      const today = new Date().toDateString();
+      document.getElementById('stat-applied').textContent =
+        getApps().filter(a => new Date(a.appliedAt).toDateString() === today).length;
+    }
+
+    // ---- Time filter ----
+    document.querySelectorAll('.time-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeHours = parseInt(btn.dataset.hours, 10);
+        render();
+      });
+    });
+
+    function withinWindow(postedStr) {
+      if (!activeHours) return true;
+      if (!postedStr) return false;
+      const posted = new Date(postedStr);
+      const cutoff = new Date(Date.now() - activeHours * 3600000);
+      return posted >= cutoff;
+    }
+
+    // ---- Render ----
     function render() {
       const q = document.getElementById('q').value.trim().toLowerCase();
       const srcFilter = document.getElementById('source').value;
       const minScore = parseInt(document.getElementById('min-score').value, 10);
       const sort = document.getElementById('sort').value;
+      const appliedOnly = document.getElementById('applied-only').checked;
 
       let list = state.jobs.filter(j => {
+        if (!withinWindow(j.posted)) return false;
         if (srcFilter && j.source !== srcFilter) return false;
         if (j.matchScore < minScore) return false;
+        if (appliedOnly && !isApplied(j.url)) return false;
         if (q) {
           const hay = `${j.title} ${j.company} ${j.location} ${(j.matchedSkills||[]).join(' ')}`.toLowerCase();
           if (!hay.includes(q)) return false;
@@ -100,45 +210,103 @@
       });
 
       if (sort === 'match') list.sort((a, b) => b.matchScore - a.matchScore);
-      else list.sort((a, b) => new Date(b.posted || 0) - new Date(a.posted || 0));
+      else if (sort === 'date') list.sort((a, b) => new Date(b.posted || 0) - new Date(a.posted || 0));
+      else if (sort === 'applied') list.sort((a, b) => isApplied(b.url) - isApplied(a.url));
 
-      state.filtered = list;
       const container = document.getElementById('jobs-list');
-
       if (list.length === 0) {
-        container.innerHTML = `<div class="empty">No jobs match these filters. Try lowering the minimum match %.</div>`;
+        const msg = activeHours ? `No jobs found in the last ${activeHours}h. Try a wider time window or lower match %.` : 'No jobs match these filters. Try lowering the minimum match %.';
+        container.innerHTML = `<div class="empty">${msg}</div>`;
         return;
       }
 
-      container.innerHTML = list.map(j => `
-        <div class="job-card">
-          <div class="job-head">
-            <div style="flex:1">
-              <h3 class="job-title">
-                <a href="${escapeHtml(j.url || '#')}" target="_blank" rel="noopener">${escapeHtml(j.title || '(untitled)')}</a>
-              </h3>
-              <p class="job-meta">
-                ${escapeHtml(j.company || '')}
-                ${j.location ? ' · ' + escapeHtml(j.location) : ''}
-                <span class="source-badge">${escapeHtml(j.source || '')}</span>
-                ${j.posted ? '<span class="small muted"> · ' + escapeHtml(formatDate(j.posted)) + '</span>' : ''}
-              </p>
-              <div class="chip-row">
-                ${(j.matchedSkills || []).slice(0, 6).map(s => `<span class="chip matched">${escapeHtml(s)}</span>`).join('')}
-                ${(j.missingSkills || []).slice(0, 4).map(s => `<span class="chip missing">${escapeHtml(s)}</span>`).join('')}
+      container.innerHTML = list.map(j => {
+        const applied = isApplied(j.url);
+        return `
+          <div class="job-card ${applied ? 'job-card-applied' : ''}">
+            <div class="job-head">
+              <div class="job-card-body">
+                <h3 class="job-title">
+                  <a href="${escapeHtml(j.url || '#')}" target="_blank" rel="noopener">${escapeHtml(j.title || '(untitled)')}</a>
+                </h3>
+                <p class="job-meta">
+                  ${escapeHtml(j.company || '')}
+                  ${j.location ? ' · ' + escapeHtml(j.location) : ''}
+                  <span class="source-badge">${escapeHtml(j.source || '')}</span>
+                  ${j.posted ? '<span class="small muted"> · ' + escapeHtml(formatDate(j.posted)) + '</span>' : ''}
+                  ${applied ? `<span class="applied-date-badge">✓ Applied ${escapeHtml(getAppliedDate(j.url))}</span>` : ''}
+                </p>
+                <div class="chip-row">
+                  ${(j.matchedSkills || []).slice(0, 6).map(s => `<span class="chip matched">${escapeHtml(s)}</span>`).join('')}
+                  ${(j.missingSkills || []).slice(0, 4).map(s => `<span class="chip missing">${escapeHtml(s)}</span>`).join('')}
+                </div>
+                <p class="job-desc">${escapeHtml(truncate(stripHtml(j.description || ''), 360))}</p>
+                <div class="job-actions">
+                  ${applied
+                    ? `<span class="btn-applied">✓ Applied</span>
+                       <button type="button" class="btn btn-ghost btn-sm btn-undo-apply" data-url="${escapeHtml(j.url)}">Undo</button>`
+                    : `<button type="button" class="btn-apply btn-track-apply"
+                         data-url="${escapeHtml(j.url)}"
+                         data-title="${escapeHtml(j.title || '')}"
+                         data-company="${escapeHtml(j.company || '')}"
+                         data-source="${escapeHtml(j.source || '')}"
+                         data-score="${j.matchScore}">Apply →</button>`}
+                  <a class="btn btn-ghost btn-sm" href="matcher.html">Check Match</a>
+                </div>
               </div>
-              <p class="job-desc">${escapeHtml(truncate(stripHtml(j.description || ''), 400))}</p>
-              <div class="job-actions">
-                <a class="btn-apply" href="${escapeHtml(j.url || '#')}" target="_blank" rel="noopener">Apply →</a>
-                <a class="btn btn-ghost btn-sm" href="matcher.html">Check Match</a>
-              </div>
+              <div class="score ${scoreClass(j.matchScore)}">${j.matchScore}%</div>
             </div>
-            <div class="score ${scoreClass(j.matchScore)}">${j.matchScore}%</div>
-          </div>
-        </div>
-      `).join('');
+          </div>`;
+      }).join('');
+
+      container.onclick = e => {
+        const applyBtn = e.target.closest('.btn-track-apply');
+        if (applyBtn) { applyJob({ url: applyBtn.dataset.url, title: applyBtn.dataset.title, company: applyBtn.dataset.company, source: applyBtn.dataset.source, matchScore: parseInt(applyBtn.dataset.score, 10) }); return; }
+        const undoBtn = e.target.closest('.btn-undo-apply');
+        if (undoBtn) removeApp(undoBtn.dataset.url);
+      };
     }
 
+    // ---- Applications log ----
+    function renderAppsLog() {
+      const apps = getApps();
+      const countEl = document.getElementById('apps-count');
+      const el = document.getElementById('apps-log-body');
+      if (!apps.length) {
+        countEl.textContent = '';
+        el.innerHTML = '<p class="muted small">No applications yet — click <strong>Apply →</strong> on any job card to start tracking.</p>';
+        return;
+      }
+      const today = new Date().toDateString();
+      const todayCount = apps.filter(a => new Date(a.appliedAt).toDateString() === today).length;
+      countEl.textContent = `${apps.length} total · ${todayCount} today`;
+
+      const byDate = {};
+      apps.forEach(a => { const d = new Date(a.appliedAt).toDateString(); if (!byDate[d]) byDate[d] = []; byDate[d].push(a); });
+
+      el.innerHTML = Object.entries(byDate).map(([day, entries]) => `
+        <div class="apps-day-group">
+          <div class="apps-day-label">${day === today ? 'Today' : day} <span class="muted small">(${entries.length} applied)</span></div>
+          <table class="apps-table">
+            <thead><tr><th>Job Title</th><th>Company</th><th>Source</th><th>Match</th><th>Time</th><th></th></tr></thead>
+            <tbody>
+              ${entries.map(a => `
+                <tr>
+                  <td><a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">${escapeHtml(a.title || '—')}</a></td>
+                  <td class="muted small">${escapeHtml(a.company || '—')}</td>
+                  <td><span class="source-badge">${escapeHtml(a.source || '—')}</span></td>
+                  <td class="${scoreClass(a.matchScore || 0)}">${a.matchScore || 0}%</td>
+                  <td class="muted small">${new Date(a.appliedAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
+                  <td><button type="button" class="btn-remove-app" data-url="${escapeHtml(a.url)}">Remove</button></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`).join('');
+
+      el.querySelectorAll('.btn-remove-app').forEach(btn => btn.addEventListener('click', () => removeApp(btn.dataset.url)));
+    }
+
+    // ---- Init ----
     (async () => {
       try {
         const [resume, feed, skills] = await Promise.all([loadResume(), loadAllJobs(), loadSkills()]);
@@ -146,41 +314,39 @@
         const resumeText = resumeToText(resume);
         const today = new Date().toDateString();
 
-        const jobs = (feed.jobs || []).map(j => {
-          const jdText = [j.title, j.description].filter(Boolean).join(' \n ');
-          const m = matchResumeToJD(resumeText, jdText, skills);
+        // Score + deduplicate
+        const raw = (feed.jobs || []).map(j => {
+          const m = matchResumeToJD([j.title, j.description].filter(Boolean).join('\n'), resumeText, skills);
           return { ...j, matchScore: m.score, matchedSkills: m.matchedSkills, missingSkills: m.missingSkills };
         });
+        state.jobs = deduplicateJobs(raw);
 
-        state.jobs = jobs;
+        const total = state.jobs.length;
+        document.getElementById('stat-total').textContent = total;
+        document.getElementById('stat-high').textContent = state.jobs.filter(j => j.matchScore >= 70).length;
+        document.getElementById('stat-mid').textContent = state.jobs.filter(j => j.matchScore >= 50 && j.matchScore < 70).length;
+        document.getElementById('stat-new').textContent = state.jobs.filter(j => j.posted && new Date(j.posted).toDateString() === today).length;
+        updateAppliedStat();
 
-        document.getElementById('stat-total').textContent = jobs.length;
-        document.getElementById('stat-high').textContent = jobs.filter(j => j.matchScore >= 70).length;
-        document.getElementById('stat-mid').textContent = jobs.filter(j => j.matchScore >= 50 && j.matchScore < 70).length;
-        document.getElementById('stat-new').textContent = jobs.filter(j => j.posted && new Date(j.posted).toDateString() === today).length;
-
-        const sources = new Set(jobs.map(j => j.source).filter(Boolean));
+        const sources = [...new Set(state.jobs.map(j => j.source).filter(Boolean))].sort();
         const srcSel = document.getElementById('source');
-        [...sources].sort().forEach(s => {
-          const opt = document.createElement('option');
-          opt.value = s; opt.textContent = s;
-          srcSel.appendChild(opt);
+        sources.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; srcSel.appendChild(o); });
+
+        document.getElementById('status-line').textContent = `${total} unique jobs · ranked against your resume`;
+        document.getElementById('updated-at').textContent = feed.updated_at ? `Last updated ${feed.updated_at}` : 'Run the GitHub Action to populate jobs';
+
+        ['q', 'source', 'min-score', 'sort', 'applied-only'].forEach(id => document.getElementById(id).addEventListener('change', render));
+        document.getElementById('q').addEventListener('input', render);
+        document.getElementById('clear-apps').addEventListener('click', () => {
+          if (confirm('Clear all application history?')) { localStorage.removeItem(APPS_KEY); updateAppliedStat(); render(); renderAppsLog(); }
         });
 
-        document.getElementById('status-line').textContent =
-          `${jobs.length} job${jobs.length === 1 ? '' : 's'} · ranked against your resume`;
-        document.getElementById('updated-at').textContent =
-          feed.updated_at ? `Last updated ${feed.updated_at}` : 'Run the GitHub Action to populate jobs';
-
-        ['q', 'source', 'min-score', 'sort'].forEach(id =>
-          document.getElementById(id).addEventListener('input', render));
-
         render();
+        renderAppsLog();
       } catch (err) {
         console.error(err);
         document.getElementById('jobs-list').innerHTML =
-          `<div class="empty">Error loading jobs: ${escapeHtml(err.message)}<br /><br />
-           Make sure <code>data/jobs.json</code> exists. The GitHub Action creates it on its first run.</div>`;
+          `<div class="empty">Error loading jobs: ${escapeHtml(err.message)}<br/><br/>Make sure <code>data/jobs.json</code> exists. The GitHub Action creates it on its first run.</div>`;
       }
     })();
   </script>

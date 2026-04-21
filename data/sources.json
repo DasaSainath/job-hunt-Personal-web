@@ -59,6 +59,20 @@
       "type": "rss",
       "url": "https://weworkremotely.com/categories/remote-full-stack-programming-jobs.rss",
       "enabled": true
+    },
+    {
+      "id": "himalayas",
+      "name": "Himalayas",
+      "type": "json_api",
+      "url": "https://himalayas.app/jobs/api?limit=100",
+      "enabled": true
+    },
+    {
+      "id": "jobicy",
+      "name": "Jobicy",
+      "type": "json_api",
+      "url": "https://jobicy.com/api/v2/remote-jobs?count=50&tag=engineer",
+      "enabled": true
     }
   ]
 }

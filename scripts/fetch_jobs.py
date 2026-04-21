@@ -156,10 +156,50 @@ def fetch_rss(source):
     return out
 
 
+def fetch_himalayas(source):
+    data = json.loads(http_get(source["url"]).decode("utf-8", errors="ignore"))
+    out = []
+    for j in data.get("jobs", []):
+        url = j.get("applicationLink") or j.get("url") or ""
+        out.append({
+            "id": make_id(source["id"], url),
+            "title": j.get("title") or "",
+            "company": (j.get("company") or {}).get("name") or "",
+            "location": j.get("locationRestrictions") or "Remote",
+            "url": url,
+            "source": source["name"],
+            "posted": (j.get("createdAt") or "")[:10],
+            "description": strip_html(j.get("description") or ""),
+            "tags": j.get("skills") or []
+        })
+    return out
+
+
+def fetch_jobicy(source):
+    data = json.loads(http_get(source["url"]).decode("utf-8", errors="ignore"))
+    out = []
+    for j in data.get("jobs", []):
+        url = j.get("url") or ""
+        out.append({
+            "id": make_id(source["id"], url),
+            "title": j.get("jobTitle") or "",
+            "company": j.get("companyName") or "",
+            "location": j.get("jobGeo") or "Remote",
+            "url": url,
+            "source": source["name"],
+            "posted": (j.get("pubDate") or "")[:10],
+            "description": strip_html(j.get("jobExcerpt") or j.get("jobDescription") or ""),
+            "tags": j.get("jobType") or []
+        })
+    return out
+
+
 ADAPTERS = {
     "json_api_remoteok": fetch_remoteok,
     "json_api_remotive": fetch_remotive,
     "json_api_arbeitnow": fetch_arbeitnow,
+    "json_api_himalayas": fetch_himalayas,
+    "json_api_jobicy": fetch_jobicy,
     "rss": fetch_rss,
 }
 
@@ -174,6 +214,10 @@ def route_adapter(source):
         return fetch_remotive
     if source["id"] == "arbeitnow":
         return fetch_arbeitnow
+    if source["id"] == "himalayas":
+        return fetch_himalayas
+    if source["id"] == "jobicy":
+        return fetch_jobicy
     return None
 
 
@@ -232,14 +276,25 @@ def main():
         print(f"  {len(jobs)} raw → {len(kept)} after filters")
         all_jobs.extend(kept)
 
-    # Dedupe by URL (fall back to id)
-    seen = set()
+    # Dedupe by URL, then by normalized (title, company) to drop cross-source duplicates
+    seen_urls = set()
+    seen_title_co = set()
     deduped = []
     for j in all_jobs:
-        key = (j.get("url") or j.get("id") or "").lower()
-        if key and key not in seen:
-            seen.add(key)
-            deduped.append(j)
+        url_key = (j.get("url") or j.get("id") or "").lower()
+        tc_key = (
+            re.sub(r"[^a-z0-9]", "", (j.get("title") or "").lower()) + "|" +
+            re.sub(r"[^a-z0-9]", "", (j.get("company") or "").lower())
+        )
+        if url_key and url_key in seen_urls:
+            continue
+        if len(tc_key) > 4 and tc_key in seen_title_co:
+            continue
+        if url_key:
+            seen_urls.add(url_key)
+        if len(tc_key) > 4:
+            seen_title_co.add(tc_key)
+        deduped.append(j)
 
     # Sort: newest first
     deduped.sort(key=lambda j: j.get("posted") or "", reverse=True)

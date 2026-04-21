@@ -402,6 +402,130 @@ textarea.jd-input:focus { outline: 2px solid var(--accent); border-color: var(--
 .btn-apply:hover { filter: brightness(1.1); text-decoration: none; color: #0f1115; }
 .btn-apply:active { transform: translateY(1px); }
 
+/* ---------- Stat card extra accents ---------- */
+.stat-card.accent-teal { border-top-color: #2dd4bf; }
+
+/* ---------- Time filter button group ---------- */
+.time-filter-group { display: flex; gap: 4px; align-items: center; }
+.time-filter-label { font-size: 0.9rem; color: var(--muted); margin-right: 2px; }
+.time-btn {
+  padding: 6px 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.time-btn:hover { background: var(--surface-2); color: var(--text); border-color: var(--accent); }
+.time-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ---------- Section dot variants ---------- */
+.section-dot-green { background: var(--accent-2); }
+
+/* ---------- Filter checkbox ---------- */
+.filter-check-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.filter-check-label input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+
+/* ---------- Job card applied state ---------- */
+.job-card-body { flex: 1; }
+.job-card-applied { border-color: var(--accent-2); }
+.job-card-applied:hover { border-color: var(--accent-2); }
+
+.applied-date-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(123,227,181,0.12);
+  border: 1px solid var(--accent-2);
+  color: var(--accent-2);
+}
+
+.btn-applied {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  background: rgba(123,227,181,0.12);
+  border: 1px solid var(--accent-2);
+  color: var(--accent-2);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.btn-undo-apply {
+  font-size: 0.78rem;
+  padding: 4px 10px;
+}
+
+/* ---------- Applications log ---------- */
+.apps-log-section {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  padding-bottom: 48px;
+}
+.apps-clear-btn { margin-left: auto; }
+.apps-day-group { margin-bottom: 24px; }
+.apps-day-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.apps-table { width: 100%; border-collapse: collapse; }
+.apps-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.apps-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
+.apps-table tr:last-child td { border-bottom: none; }
+.apps-table tr:hover td { background: var(--surface-2); }
+.score-high { color: var(--accent-2); font-weight: 700; }
+.score-mid { color: var(--warn); font-weight: 700; }
+.score-low { color: var(--danger); font-weight: 700; }
+.btn-remove-app {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-remove-app:hover { border-color: var(--danger); color: var(--danger); }
+
 /* ---------- Responsive ---------- */
 @media (max-width: 640px) {
   .hero h1 { font-size: 2rem; }
