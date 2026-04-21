@@ -5,6 +5,272 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Resume Matcher</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    /* ---- Two-panel workspace ---- */
+    body { overflow: hidden; }
+    .workspace {
+      display: flex;
+      height: calc(100vh - 52px);
+    }
+
+    /* Left panel */
+    .panel-left {
+      width: 44%;
+      min-width: 320px;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .panel-left-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+      gap: 8px;
+    }
+    .panel-left-header h3 {
+      margin: 0;
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .dl-btns { display: flex; gap: 6px; }
+    .resume-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 20px;
+      background: #e8eaed;
+    }
+
+    /* Right panel */
+    .panel-right {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 28px;
+    }
+
+    /* ---- Resume document ---- */
+    .resume-doc {
+      background: white;
+      padding: 36px 40px;
+      border-radius: 3px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+      font-family: 'Georgia', 'Times New Roman', serif;
+      color: #111;
+      font-size: 12.5px;
+      line-height: 1.5;
+    }
+    .resume-doc .r-name {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0 0 4px;
+      letter-spacing: -0.01em;
+    }
+    .resume-doc .r-title-line {
+      font-size: 12px;
+      color: #444;
+      margin-bottom: 4px;
+      font-style: italic;
+    }
+    .resume-doc .r-contact {
+      font-size: 11px;
+      color: #444;
+      margin-bottom: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .resume-doc .r-contact a { color: #1a56db; text-decoration: none; }
+    .resume-doc .r-contact .sep { color: #bbb; }
+    .resume-doc .r-section {
+      margin-top: 14px;
+      border-top: 1.5px solid #222;
+      padding-top: 5px;
+    }
+    .resume-doc .r-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      margin-bottom: 6px;
+    }
+    .resume-doc .r-summary { font-size: 12px; color: #333; margin: 0; }
+    .resume-doc .r-skills-row { font-size: 12px; margin-bottom: 2px; }
+    .resume-doc .r-skills-row strong { font-weight: 700; }
+    .resume-doc .r-exp-item { margin-bottom: 10px; }
+    .resume-doc .r-exp-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .resume-doc .r-exp-role { font-weight: 700; font-size: 12.5px; }
+    .resume-doc .r-exp-company { font-weight: 400; font-style: italic; }
+    .resume-doc .r-exp-date { font-size: 11px; color: #555; white-space: nowrap; flex-shrink: 0; }
+    .resume-doc .r-exp-loc { font-size: 11px; color: #555; font-style: italic; }
+    .resume-doc ul { margin: 4px 0 0; padding-left: 16px; }
+    .resume-doc li { margin-bottom: 2px; font-size: 12px; }
+    .resume-doc .r-proj-item { margin-bottom: 7px; }
+    .resume-doc .r-proj-name { font-weight: 700; font-size: 12.5px; }
+    .resume-doc .r-proj-tech { color: #555; font-size: 11px; }
+    .resume-doc .r-proj-desc { font-size: 12px; color: #333; }
+    .resume-doc .r-edu-item { margin-bottom: 6px; }
+    .resume-doc .r-edu-degree { font-weight: 700; font-size: 12.5px; }
+    .resume-doc .r-edu-sub { font-size: 11.5px; color: #444; }
+
+    /* Added skill highlight */
+    .skill-added {
+      background: #d1fae5;
+      color: #065f46;
+      border-radius: 2px;
+      padding: 0 3px;
+      font-weight: 700;
+    }
+
+    /* ---- Right panel ---- */
+    .matcher-header { margin-bottom: 20px; }
+    .matcher-header h2 { font-size: 1.35rem; margin: 0 0 4px; }
+    .jd-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    /* Results sections */
+    .result-section { margin-top: 22px; }
+    .result-section-title {
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+      margin: 0 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .result-section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Score booster cards */
+    .booster-list { display: flex; flex-direction: column; gap: 8px; }
+    .booster-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      transition: border-color 0.15s;
+    }
+    .booster-card:hover { border-color: var(--accent); }
+    .booster-card.is-added { border-color: var(--accent-2); background: rgba(123,227,181,0.06); }
+    .booster-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+    .booster-skill { font-weight: 600; font-size: 0.92rem; }
+    .booster-delta {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--accent-2);
+      background: rgba(123,227,181,0.12);
+      border: 1px solid var(--accent-2);
+      border-radius: 999px;
+      padding: 2px 8px;
+      white-space: nowrap;
+    }
+    .booster-no-delta { font-size: 0.78rem; color: var(--muted); }
+    .btn-add {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 14px;
+      background: var(--accent-2);
+      color: #0f1115;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 700;
+      transition: filter 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .btn-add:hover { filter: brightness(1.1); }
+    .btn-add:disabled {
+      background: var(--surface-2);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      cursor: default;
+      filter: none;
+    }
+
+    /* History */
+    .history-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .history-table th {
+      text-align: left;
+      color: var(--muted);
+      font-weight: 500;
+      padding: 6px 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .history-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .history-table tr:last-child td { border-bottom: none; }
+    .history-table .score-high { color: var(--accent-2); font-weight: 700; }
+    .history-table .score-mid { color: var(--warn); font-weight: 700; }
+    .history-table .score-low { color: var(--danger); font-weight: 700; }
+    .history-table .jd-preview {
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    /* Print — show only resume */
+    @media print {
+      nav, .panel-right, .panel-left-header { display: none !important; }
+      body { overflow: visible !important; background: white !important; }
+      .workspace { display: block !important; height: auto !important; }
+      .panel-left { width: 100% !important; border: none !important; overflow: visible !important; }
+      .resume-scroll { background: white !important; padding: 0 !important; overflow: visible !important; }
+      .resume-doc { box-shadow: none !important; padding: 20px 0 !important; }
+    }
+
+    /* Utility layout helpers */
+    .results-hidden { display: none; }
+    .match-summary-top { margin-top: 20px; }
+    .analyze-row { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .jd-keywords-note { margin: 0 0 8px; }
+    .history-section { margin-top: 36px; padding-bottom: 40px; }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .workspace { flex-direction: column; height: auto; }
+      .panel-left { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid var(--border); }
+      .resume-scroll { max-height: 480px; }
+      .panel-right { padding: 16px; }
+    }
+  </style>
 </head>
 <body>
   <nav class="nav">
@@ -18,53 +284,87 @@
     </div>
   </nav>
 
-  <main class="container-narrow">
-    <section class="hero">
-      <h1>Resume ↔ JD Matcher</h1>
-      <p class="subtitle">Paste any job description. See your match %, which skills hit, which are missing, and what to add.</p>
-    </section>
+  <div class="workspace">
 
-    <section>
-      <label for="jd" class="muted small">Job description</label>
-      <textarea id="jd" class="jd-input" placeholder="Paste the full job description here…"></textarea>
-      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-        <button id="run-btn" class="btn">Analyze</button>
-        <button id="clear-btn" class="btn btn-ghost">Clear</button>
-        <span id="stats" class="muted small" style="align-self:center;"></span>
+    <!-- LEFT: Resume Preview -->
+    <div class="panel-left">
+      <div class="panel-left-header">
+        <h3>Resume Preview</h3>
+        <div class="dl-btns">
+          <button type="button" class="btn btn-ghost btn-sm" id="dl-pdf" title="Print / Save as PDF">⬇ PDF</button>
+          <button type="button" class="btn btn-sm" id="dl-word" title="Download as Word (.docx)">⬇ Word</button>
+        </div>
       </div>
-    </section>
+      <div class="resume-scroll">
+        <div class="resume-doc" id="resume-preview">
+          <p class="muted">Loading resume…</p>
+        </div>
+      </div>
+    </div>
 
-    <section id="results" style="display:none;">
-      <div class="match-summary">
-        <div class="score" id="final-score">—</div>
-        <div class="score-details">
-          <h3 id="headline">—</h3>
-          <p id="breakdown" class="muted"></p>
+    <!-- RIGHT: Matcher -->
+    <div class="panel-right">
+      <div class="matcher-header">
+        <h2>Resume ↔ JD Matcher</h2>
+        <p class="muted small">Paste a job description · see your score · click skills to add them to your resume · download updated resume.</p>
+      </div>
+
+      <div>
+        <div class="jd-label">Job Description</div>
+        <textarea id="jd" class="jd-input" placeholder="Paste the full job description here…"></textarea>
+        <div class="analyze-row">
+          <button type="button" id="run-btn" class="btn">Analyze</button>
+          <button type="button" id="clear-btn" class="btn btn-ghost">Clear</button>
+          <span id="stats" class="muted small"></span>
         </div>
       </div>
 
-      <h2 class="section-h">Matched skills</h2>
-      <div id="matched" class="chip-row"></div>
+      <!-- Score + results -->
+      <div id="results" class="results-hidden">
+        <div class="match-summary match-summary-top">
+          <div class="score" id="final-score">—</div>
+          <div class="score-details">
+            <h3 id="headline">—</h3>
+            <p id="breakdown" class="muted"></p>
+          </div>
+        </div>
 
-      <h2 class="section-h">Missing skills (in JD, not in your resume)</h2>
-      <div id="missing" class="chip-row"></div>
+        <div class="result-section">
+          <div class="result-section-title">Matched Skills</div>
+          <div id="matched" class="chip-row"></div>
+        </div>
 
-      <h2 class="section-h">JD keywords to mirror</h2>
-      <p class="muted small">Distinctive terms the JD uses that your resume doesn't. ATS systems score against the JD's own language — use these exact words where they're truthful.</p>
-      <div id="keywords" class="chip-row"></div>
+        <div class="result-section">
+          <div class="result-section-title">Missing Skills</div>
+          <div id="missing" class="chip-row"></div>
+        </div>
 
-      <h2 class="section-h">Suggestions</h2>
-      <div id="suggestions"></div>
-    </section>
-  </main>
+        <div class="result-section">
+          <div class="result-section-title">Score Boosters — click to add to resume</div>
+          <div class="booster-list" id="boosters"></div>
+        </div>
 
-  <footer class="footer">
-    Matching runs in your browser. Nothing is uploaded.
-  </footer>
+        <div class="result-section">
+          <div class="result-section-title">JD Keywords to Mirror</div>
+          <p class="muted small jd-keywords-note">Exact words the JD uses — mirror them where truthful for ATS scoring.</p>
+          <div id="keywords" class="chip-row"></div>
+        </div>
+      </div>
 
-  <style>
-    .section-h { margin-top: 28px; font-size: 1.1rem; }
-  </style>
+      <!-- History -->
+      <div class="result-section history-section">
+        <div class="result-section-title">Match History</div>
+        <div id="history-body">
+          <p class="muted small">No history yet — analyze a job to start tracking.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CDN: Word export + FileSaver -->
+  <script src="https://unpkg.com/html-docx-js@0.3.1/dist/html-docx.js"></script>
+  <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 
   <script type="module">
     import { loadResume, loadSkills, resumeToText, escapeHtml, scoreClass, markActiveNav } from './js/common.js';
@@ -72,84 +372,313 @@
 
     markActiveNav();
 
-    let resume = null;
-    let resumeText = '';
-    let skills = [];
+    const HISTORY_KEY = 'jh_match_history';
 
-    (async () => {
-      try {
-        [resume, skills] = await Promise.all([loadResume(), loadSkills()]);
-        document.getElementById('brand-name').textContent = resume.name || 'Portfolio';
-        resumeText = resumeToText(resume);
-        document.getElementById('stats').textContent =
-          `Ready · resume loaded (${resumeText.length.toLocaleString()} chars, ${skills.length} skills in dictionary)`;
-      } catch (err) {
-        document.getElementById('stats').textContent = 'Error: ' + err.message;
-      }
-    })();
+    let resumeState = null;
+    let skills = [];
+    let addedSkills = [];   // skills added via booster buttons this session
+    let currentJD = '';
+    let currentScore = 0;
+
+    // ---- Render resume preview ----
+    function renderResumePreview() {
+      const r = resumeState;
+      if (!r) return;
+
+      const contactParts = [];
+      if (r.email) contactParts.push(`<a href="mailto:${escapeHtml(r.email)}">${escapeHtml(r.email)}</a>`);
+      if (r.phone) contactParts.push(escapeHtml(r.phone));
+      if (r.location) contactParts.push(escapeHtml(r.location));
+      if (r.links?.linkedin) contactParts.push(`<a href="${escapeHtml(r.links.linkedin)}" target="_blank">LinkedIn</a>`);
+      if (r.links?.github) contactParts.push(`<a href="${escapeHtml(r.links.github)}" target="_blank">GitHub</a>`);
+      const contactHtml = contactParts.map((p, i) =>
+        i < contactParts.length - 1 ? p + ' <span class="sep">|</span>' : p
+      ).join(' ');
+
+      // Skills — merge addedSkills into a special group
+      const skillsCopy = JSON.parse(JSON.stringify(r.skills || {}));
+      const sessionAdded = addedSkills.filter(s => !Object.values(skillsCopy).flat().includes(s));
+      if (sessionAdded.length) skillsCopy['_added'] = sessionAdded;
+
+      const skillsHtml = Object.entries(skillsCopy).map(([group, list]) => {
+        if (!Array.isArray(list) || !list.length) return '';
+        const label = group === '_added' ? 'Added Skills' : group.charAt(0).toUpperCase() + group.slice(1);
+        const items = list.map(s => {
+          const isNew = addedSkills.includes(s);
+          return isNew ? `<span class="skill-added">${escapeHtml(s)}</span>` : escapeHtml(s);
+        }).join(', ');
+        return `<div class="r-skills-row"><strong>${escapeHtml(label)}:</strong> ${items}</div>`;
+      }).join('');
+
+      const expHtml = (r.experience || []).map(e => `
+        <div class="r-exp-item">
+          <div class="r-exp-head">
+            <span class="r-exp-role">${escapeHtml(e.role || '')}${e.company ? ` — <span class="r-exp-company">${escapeHtml(e.company)}</span>` : ''}</span>
+            <span class="r-exp-date">${escapeHtml(e.start || '')}${e.end ? ` – ${escapeHtml(e.end)}` : ''}</span>
+          </div>
+          ${e.location ? `<div class="r-exp-loc">${escapeHtml(e.location)}</div>` : ''}
+          ${e.bullets?.length ? `<ul>${e.bullets.map(b => `<li>${escapeHtml(b)}</li>`).join('')}</ul>` : ''}
+        </div>
+      `).join('');
+
+      const projHtml = (r.projects || []).map(p => `
+        <div class="r-proj-item">
+          <span class="r-proj-name">${p.link ? `<a href="${escapeHtml(p.link)}">${escapeHtml(p.name || '')}</a>` : escapeHtml(p.name || '')}</span>
+          ${p.tech?.length ? `<span class="r-proj-tech"> (${p.tech.map(t => escapeHtml(t)).join(', ')})</span>` : ''}
+          ${p.description ? `<div class="r-proj-desc">${escapeHtml(p.description)}</div>` : ''}
+        </div>
+      `).join('');
+
+      const eduHtml = (r.education || []).map(ed => `
+        <div class="r-edu-item">
+          <div class="r-edu-degree">${escapeHtml(ed.degree || '')}</div>
+          <div class="r-edu-sub">${[ed.school, ed.location, ed.year].filter(Boolean).map(escapeHtml).join(' · ')}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('resume-preview').innerHTML = `
+        <div class="r-name">${escapeHtml(r.name || '')}</div>
+        ${r.title ? `<div class="r-title-line">${escapeHtml(r.title)}</div>` : ''}
+        <div class="r-contact">${contactHtml}</div>
+
+        ${r.summary ? `<div class="r-section"><div class="r-section-title">Summary</div><p class="r-summary">${escapeHtml(r.summary)}</p></div>` : ''}
+        ${skillsHtml ? `<div class="r-section"><div class="r-section-title">Skills</div>${skillsHtml}</div>` : ''}
+        ${expHtml ? `<div class="r-section"><div class="r-section-title">Experience</div>${expHtml}</div>` : ''}
+        ${projHtml ? `<div class="r-section"><div class="r-section-title">Projects</div>${projHtml}</div>` : ''}
+        ${eduHtml ? `<div class="r-section"><div class="r-section-title">Education</div>${eduHtml}</div>` : ''}
+      `;
+    }
+
+    // ---- Analysis ----
+    function buildResumeText() {
+      let text = resumeToText(resumeState);
+      if (addedSkills.length) text += ' ' + addedSkills.join(' ');
+      return text;
+    }
 
     function analyze() {
       const jd = document.getElementById('jd').value.trim();
-      if (!jd) {
-        alert('Paste a job description first.');
-        return;
-      }
-      if (!resume) {
-        alert('Resume not loaded yet. Try again in a second.');
-        return;
-      }
-      const r = matchResumeToJD(resumeText, jd, skills);
+      if (!jd || !resumeState) return;
+      currentJD = jd;
 
-      const results = document.getElementById('results');
-      results.style.display = '';
+      const result = matchResumeToJD(buildResumeText(), jd, skills);
+      currentScore = result.score;
+      renderResults(result);
+      saveHistory(result, jd);
+    }
+
+    function renderResults(r) {
+      document.getElementById('results').classList.remove('results-hidden');
 
       const scoreEl = document.getElementById('final-score');
       scoreEl.textContent = r.score + '%';
       scoreEl.className = 'score ' + scoreClass(r.score);
 
-      let headline;
-      if (r.score >= 75) headline = 'Strong match — apply today.';
-      else if (r.score >= 55) headline = 'Good match — worth a tailored application.';
-      else if (r.score >= 35) headline = 'Partial match — tailor heavily or skip.';
-      else headline = 'Weak match — probably not worth the time.';
-      document.getElementById('headline').textContent = headline;
+      const headlines = { 75: 'Strong match — apply today.', 55: 'Good match — worth a tailored application.', 35: 'Partial match — tailor heavily or skip.', 0: 'Weak match — probably not worth the time.' };
+      document.getElementById('headline').textContent = Object.entries(headlines).reverse().find(([t]) => r.score >= +t)[1];
 
       const parts = [];
-      if (r.skillOverlapPct !== null) parts.push(`Skill overlap: ${r.skillOverlapPct}% (${r.stats.jdSkillCount} skills detected in JD)`);
+      if (r.skillOverlapPct !== null) parts.push(`Skill overlap: ${r.skillOverlapPct}%`);
       parts.push(`Content similarity: ${r.contentSimPct}%`);
       document.getElementById('breakdown').textContent = parts.join(' · ');
 
-      document.getElementById('matched').innerHTML =
-        r.matchedSkills.length
-          ? r.matchedSkills.map(s => `<span class="chip matched">${escapeHtml(s)}</span>`).join('')
-          : '<span class="muted small">No matches — either your resume doesn\'t list them or the JD uses unrecognized terms.</span>';
+      document.getElementById('matched').innerHTML = r.matchedSkills.length
+        ? r.matchedSkills.map(s => `<span class="chip matched">${escapeHtml(s)}</span>`).join('')
+        : '<span class="muted small">No skill matches found.</span>';
 
-      document.getElementById('missing').innerHTML =
-        r.missingSkills.length
-          ? r.missingSkills.map(s => `<span class="chip missing">${escapeHtml(s)}</span>`).join('')
-          : '<span class="muted small">Your resume covers every skill the JD mentions. 🎯</span>';
+      document.getElementById('missing').innerHTML = r.missingSkills.length
+        ? r.missingSkills.map(s => `<span class="chip missing">${escapeHtml(s)}</span>`).join('')
+        : '<span class="muted small">Your resume covers every skill in this JD.</span>';
 
-      document.getElementById('keywords').innerHTML =
-        r.jdOnlyKeywords.length
-          ? r.jdOnlyKeywords.map(k => `<span class="chip">${escapeHtml(k.term)}</span>`).join('')
-          : '<span class="muted small">No distinctive JD-only terms.</span>';
+      document.getElementById('keywords').innerHTML = r.jdOnlyKeywords.length
+        ? r.jdOnlyKeywords.map(k => `<span class="chip">${escapeHtml(k.term)}</span>`).join('')
+        : '<span class="muted small">No distinctive JD-only terms.</span>';
 
-      document.getElementById('suggestions').innerHTML = r.suggestions.map(s => `
-        <div class="card">
-          <p class="card-title">${escapeHtml(s.title)}</p>
-          <p class="card-body muted">${escapeHtml(s.detail)}</p>
-        </div>
-      `).join('') || '<p class="muted">No suggestions — you\'re well-aligned.</p>';
-
-      results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      renderBoosters(r);
     }
 
+    function renderBoosters(r) {
+      const container = document.getElementById('boosters');
+      const candidates = r.missingSkills.slice(0, 12);
+
+      if (!candidates.length) {
+        container.innerHTML = '<p class="muted small">No missing skills to boost.</p>';
+        return;
+      }
+
+      const baseText = buildResumeText();
+      const boosts = candidates.map(skill => {
+        const augmented = baseText + ' ' + skill + ' ' + skill;
+        const trial = matchResumeToJD(augmented, currentJD, skills);
+        return { skill, delta: trial.score - r.score, newScore: trial.score };
+      }).sort((a, b) => b.delta - a.delta);
+
+      container.innerHTML = boosts.map(b => {
+        const already = addedSkills.includes(b.skill);
+        const id = 'booster-' + b.skill.replace(/[^a-z0-9]/gi, '-');
+        return `
+          <div class="booster-card ${already ? 'is-added' : ''}" id="${id}">
+            <div class="booster-left">
+              <span class="booster-skill">${escapeHtml(b.skill)}</span>
+              ${b.delta > 0
+                ? `<span class="booster-delta">+${b.delta}% &rarr; ${b.newScore}%</span>`
+                : `<span class="booster-no-delta">minimal impact</span>`}
+            </div>
+            <button class="btn-add" data-skill="${escapeHtml(b.skill)}" ${already ? 'disabled' : ''}>
+              ${already ? '✓ Added' : '+ Add to Resume'}
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      container.querySelectorAll('.btn-add:not([disabled])').forEach(btn => {
+        btn.addEventListener('click', () => addSkill(btn.dataset.skill));
+      });
+    }
+
+    function addSkill(skill) {
+      if (addedSkills.includes(skill)) return;
+      addedSkills.push(skill);
+      renderResumePreview();
+      if (currentJD) analyze();
+    }
+
+    // ---- History ----
+    function saveHistory(result, jd) {
+      const history = getHistory();
+      history.unshift({
+        date: new Date().toISOString(),
+        score: result.score,
+        matched: result.matchedSkills.length,
+        missing: result.missingSkills.length,
+        jdSnippet: jd.slice(0, 140).replace(/\s+/g, ' ')
+      });
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 20)));
+      renderHistory();
+    }
+
+    function getHistory() {
+      try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+    }
+
+    function renderHistory() {
+      const history = getHistory();
+      const el = document.getElementById('history-body');
+      if (!history.length) {
+        el.innerHTML = '<p class="muted small">No history yet.</p>';
+        return;
+      }
+      const scoreColorClass = s => s >= 70 ? 'score-high' : s >= 50 ? 'score-mid' : 'score-low';
+      el.innerHTML = `
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Score</th>
+              <th>Matched</th>
+              <th>Missing</th>
+              <th>JD Preview</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${history.map(h => `
+              <tr>
+                <td class="muted small">${new Date(h.date).toLocaleDateString()}</td>
+                <td class="${scoreColorClass(h.score)}">${h.score}%</td>
+                <td class="muted small">${h.matched}</td>
+                <td class="muted small">${h.missing}</td>
+                <td class="jd-preview">${escapeHtml(h.jdSnippet)}…</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <button class="btn btn-ghost btn-sm" id="clear-history" style="margin-top:10px;">Clear History</button>
+      `;
+      document.getElementById('clear-history').addEventListener('click', () => {
+        localStorage.removeItem(HISTORY_KEY);
+        renderHistory();
+      });
+    }
+
+    // ---- Downloads ----
+    function downloadPdf() {
+      window.print();
+    }
+
+    function downloadWord() {
+      if (!resumeState) return;
+      const preview = document.getElementById('resume-preview').innerHTML;
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+        body{font-family:Georgia,serif;font-size:13px;margin:40px;color:#111;line-height:1.5}
+        .r-name{font-size:22px;font-weight:bold;margin-bottom:4px}
+        .r-title-line{font-size:12px;color:#555;font-style:italic;margin-bottom:4px}
+        .r-contact{font-size:11px;color:#444;margin-bottom:14px}
+        .sep{color:#bbb}
+        .r-section{margin-top:14px;border-top:1.5px solid #222;padding-top:5px}
+        .r-section-title{font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:.09em;margin-bottom:5px}
+        .r-skills-row{font-size:12px;margin-bottom:2px}
+        .r-exp-item{margin-bottom:10px}
+        .r-exp-head{display:flex;justify-content:space-between}
+        .r-exp-role{font-weight:bold;font-size:12.5px}
+        .r-exp-company{font-style:italic;font-weight:normal}
+        .r-exp-date{font-size:11px;color:#555}
+        .r-exp-loc{font-size:11px;color:#555;font-style:italic}
+        ul{margin:4px 0 0;padding-left:16px}
+        li{margin-bottom:2px;font-size:12px}
+        .r-proj-item{margin-bottom:7px}
+        .r-proj-name{font-weight:bold}
+        .r-proj-tech{color:#555;font-size:11px}
+        .r-proj-desc{font-size:12px;color:#333}
+        .r-edu-item{margin-bottom:6px}
+        .r-edu-degree{font-weight:bold}
+        .r-edu-sub{font-size:11.5px;color:#444}
+        .skill-added{background:#d1fae5;font-weight:bold}
+        a{color:#1a56db}
+      </style></head><body>${preview}</body></html>`;
+
+      if (typeof htmlDocx !== 'undefined') {
+        try {
+          const blob = htmlDocx.asBlob(html);
+          const name = (resumeState.name || 'resume').replace(/\s+/g, '_') + '_resume.docx';
+          saveAs(blob, name);
+          return;
+        } catch (e) {
+          console.warn('html-docx-js failed:', e);
+        }
+      }
+      // Fallback: download as .html that Word can open
+      const blob = new Blob([html], { type: 'application/msword' });
+      const name = (resumeState.name || 'resume').replace(/\s+/g, '_') + '_resume.doc';
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      a.click();
+    }
+
+    // ---- Init ----
+    (async () => {
+      try {
+        [resumeState, skills] = await Promise.all([loadResume(), loadSkills()]);
+        document.getElementById('brand-name').textContent = resumeState.name || 'Portfolio';
+        renderResumePreview();
+        renderHistory();
+        document.getElementById('stats').textContent =
+          `Resume loaded · ${skills.length} skills in dictionary`;
+      } catch (err) {
+        document.getElementById('resume-preview').innerHTML = `<p class="muted">Error loading resume: ${escapeHtml(err.message)}</p>`;
+        document.getElementById('stats').textContent = 'Error: ' + err.message;
+      }
+    })();
+
     document.getElementById('run-btn').addEventListener('click', analyze);
+    document.getElementById('dl-pdf').addEventListener('click', downloadPdf);
+    document.getElementById('dl-word').addEventListener('click', downloadWord);
     document.getElementById('clear-btn').addEventListener('click', () => {
       document.getElementById('jd').value = '';
-      document.getElementById('results').style.display = 'none';
+      document.getElementById('results').classList.add('results-hidden');
+      currentJD = '';
     });
-    document.getElementById('jd').addEventListener('keydown', (e) => {
+    document.getElementById('jd').addEventListener('keydown', e => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') analyze();
     });
   </script>

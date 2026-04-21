@@ -204,7 +204,7 @@ code { font-family: var(--mono); background: var(--surface-2); padding: 1px 5px;
 /* ---------- Forms / matcher ---------- */
 textarea.jd-input {
   width: 100%;
-  min-height: 240px;
+  min-height: 170px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
