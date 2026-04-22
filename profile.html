@@ -3,694 +3,1008 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Profile — JobHub</title>
+  <title>Profile — JobHub</title>
   <link rel="stylesheet" href="css/styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <style>
-    .profile-page { max-width: 860px; margin: 0 auto; padding: 32px 24px 64px; }
+    .profile-wrap { max-width: 900px; margin: 0 auto; padding: 28px 24px 100px; }
 
-    .profile-hero-card {
+    /* Hero */
+    .profile-hero {
       background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-      border-radius: var(--radius); padding: 28px 32px; margin-bottom: 28px;
-      display: flex; align-items: center; gap: 20px; color: #fff;
+      border-radius: var(--radius); padding: 24px 28px; margin-bottom: 24px;
+      display: flex; align-items: center; gap: 18px; color: #fff;
     }
-    .profile-avatar-big {
-      width: 72px; height: 72px; border-radius: 50%;
+    .p-avatar {
+      width: 68px; height: 68px; border-radius: 50%; flex-shrink: 0;
       background: rgba(255,255,255,0.2); border: 3px solid rgba(255,255,255,0.4);
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.6rem; font-weight: 800; flex-shrink: 0;
-      color: #fff;
+      font-size: 1.5rem; font-weight: 800; color: #fff;
     }
-    .profile-hero-info h2 { margin: 0 0 4px; font-size: 1.4rem; font-weight: 800; }
-    .profile-hero-info p { margin: 0; opacity: 0.85; font-size: 0.9rem; }
+    .p-hero-info h2 { margin: 0 0 3px; font-size: 1.35rem; font-weight: 800; }
+    .p-hero-info p { margin: 0; font-size: 0.87rem; opacity: 0.8; }
 
-    .profile-section-card {
+    /* Notice */
+    .profile-notice {
+      background: rgba(37,99,235,0.06); border: 1px solid rgba(37,99,235,0.18);
+      border-radius: var(--radius-sm); padding: 10px 16px; margin-bottom: 20px;
+      font-size: 0.84rem; color: var(--accent-2);
+    }
+
+    /* Upload zone */
+    .upload-card {
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px;
-      overflow: hidden;
+      border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; overflow: hidden;
     }
-    .profile-section-head {
-      display: flex; align-items: center; gap: 10px;
-      padding: 16px 20px; border-bottom: 1px solid var(--border);
-      background: var(--surface);
+    .card-head {
+      display: flex; align-items: center; gap: 10px; padding: 14px 20px;
+      border-bottom: 1px solid var(--border); background: var(--surface);
     }
-    .profile-section-head h3 { margin: 0; font-size: 0.95rem; font-weight: 700; }
-    .profile-section-head .section-dot { flex-shrink: 0; }
-    .profile-section-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .card-head h3 { margin: 0; font-size: 0.95rem; font-weight: 700; flex: 1; }
+    .card-body { padding: 20px; }
 
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
-    .form-field { display: flex; flex-direction: column; gap: 5px; }
-    .form-field label { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+    .upload-zone {
+      border: 2px dashed var(--border); border-radius: var(--radius-sm);
+      padding: 28px 20px; text-align: center; cursor: pointer; background: var(--surface-2);
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: rgba(124,58,237,0.04); }
+    .upload-zone-icon { font-size: 2.2rem; margin-bottom: 8px; }
+    .upload-zone p { margin: 4px 0; font-size: 0.85rem; color: var(--muted); }
+    .upload-zone strong { color: var(--text); }
+    .upload-file-label {
+      display: inline-block; margin-top: 12px; padding: 8px 20px;
+      background: var(--accent); color: #fff; border-radius: var(--radius-sm);
+      font-size: 0.87rem; font-weight: 700; cursor: pointer;
+    }
+    .upload-status {
+      margin-top: 12px; padding: 10px 14px; border-radius: var(--radius-sm);
+      font-size: 0.84rem; display: none;
+    }
+    .upload-status.loading { display: block; background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); }
+    .upload-status.success { display: block; background: rgba(5,150,105,0.07); border: 1px solid rgba(5,150,105,0.2); color: var(--success); }
+    .upload-status.error   { display: block; background: rgba(220,38,38,0.07); border: 1px solid rgba(220,38,38,0.15); color: var(--danger); }
+
+    /* Section cards */
+    .section-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 18px; overflow: hidden;
+    }
+    .section-head {
+      display: flex; align-items: center; gap: 10px; padding: 13px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-head h3 { margin: 0; font-size: 0.93rem; font-weight: 700; flex: 1; }
+    .btn-edit-section {
+      padding: 5px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--surface); color: var(--muted); font: inherit; font-size: 0.8rem;
+      font-weight: 600; cursor: pointer; transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-edit-section:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-edit-section.active { border-color: var(--accent); color: var(--accent); background: rgba(124,58,237,0.06); }
+
+    /* View mode */
+    .section-view { padding: 16px 20px; }
+    .view-row { display: flex; gap: 6px; margin-bottom: 8px; font-size: 0.88rem; flex-wrap: wrap; }
+    .view-label { font-weight: 600; color: var(--muted); min-width: 90px; flex-shrink: 0; font-size: 0.82rem; }
+    .view-val { color: var(--text); flex: 1; }
+    .view-val.empty { color: var(--muted); font-style: italic; }
+    .chip-list { display: flex; flex-wrap: wrap; gap: 5px; }
+    .view-chip {
+      padding: 3px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 500;
+      background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.18); color: var(--accent);
+    }
+    .exp-view-entry, .edu-view-entry, .cert-view-entry {
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+    }
+    .exp-view-entry:last-child, .edu-view-entry:last-child, .cert-view-entry:last-child { border-bottom: none; }
+    .entry-head-line { font-weight: 700; font-size: 0.92rem; color: var(--text); margin-bottom: 2px; }
+    .entry-sub-line { font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; }
+    .bullet-list { margin: 0; padding-left: 18px; }
+    .bullet-list li { font-size: 0.86rem; color: var(--text); margin-bottom: 3px; }
+
+    /* Edit mode */
+    .section-edit { padding: 18px 20px; display: none; }
+    .section-edit.open { display: block; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    @media(max-width:600px) { .form-row { grid-template-columns: 1fr; } }
+    .form-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+    .form-field:last-child { margin-bottom: 0; }
+    .form-field label { font-size: 0.8rem; font-weight: 600; color: var(--text); }
     .form-field input, .form-field textarea, .form-field select {
-      padding: 9px 12px; border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm); font: inherit; font-size: 0.88rem;
-      color: var(--text); background: var(--surface);
+      padding: 8px 11px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font: inherit; font-size: 0.87rem; color: var(--text); background: var(--surface);
       transition: border-color 0.15s, box-shadow 0.15s; resize: vertical;
     }
     .form-field input:focus, .form-field textarea:focus {
-      outline: none; border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(124,58,237,0.10);
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,58,237,0.09);
     }
-    .form-field .hint { font-size: 0.75rem; color: var(--muted); }
-    textarea.tall { min-height: 90px; }
-    textarea.medium { min-height: 64px; }
+    .form-field .hint { font-size: 0.74rem; color: var(--muted); }
+    textarea.tall { min-height: 88px; }
 
-    /* Resume upload zone */
-    .resume-upload-zone {
-      border: 2px dashed var(--border); border-radius: var(--radius-sm);
-      padding: 24px; text-align: center; cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-      background: var(--surface-2);
-    }
-    .resume-upload-zone:hover, .resume-upload-zone.drag-over {
-      border-color: var(--accent); background: rgba(124,58,237,0.04);
-    }
-    .resume-upload-zone p { margin: 6px 0 0; font-size: 0.85rem; color: var(--muted); }
-    .upload-zone-icon { font-size: 2rem; margin-bottom: 6px; }
-    .upload-btn-label {
-      display: inline-block; margin-top: 10px; padding: 7px 18px;
-      background: var(--accent); color: #fff; border-radius: var(--radius-sm);
-      font-size: 0.85rem; font-weight: 700; cursor: pointer;
-    }
-    .upload-status {
-      margin-top: 10px; padding: 8px 12px; border-radius: var(--radius-sm);
-      font-size: 0.83rem; display: none;
-    }
-    .upload-status.success {
-      display: block; background: rgba(5,150,105,0.08);
-      border: 1px solid rgba(5,150,105,0.2); color: var(--success);
-    }
-    .upload-status.error {
-      display: block; background: rgba(220,38,38,0.07);
-      border: 1px solid rgba(220,38,38,0.15); color: var(--danger);
-    }
-    .upload-status.loading {
-      display: block; background: var(--surface-2);
-      border: 1px solid var(--border); color: var(--muted);
-    }
-
-    /* Experience/Education entries */
-    .exp-entry, .edu-entry {
+    /* Entry cards (experience, education, certs) */
+    .entry-card {
       border: 1px solid var(--border); border-radius: var(--radius-sm);
-      padding: 16px; background: var(--surface-2); position: relative;
+      padding: 14px; background: var(--surface-2); margin-bottom: 12px; position: relative;
     }
-    .entry-remove {
+    .btn-remove-entry {
       position: absolute; top: 10px; right: 10px;
       background: none; border: 1px solid var(--border); color: var(--muted);
-      border-radius: var(--radius-sm); padding: 3px 8px; font-size: 0.72rem;
-      cursor: pointer; transition: border-color 0.15s, color 0.15s;
+      border-radius: var(--radius-sm); padding: 2px 8px; font-size: 0.7rem; cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
     }
-    .entry-remove:hover { border-color: var(--danger); color: var(--danger); }
-    .add-entry-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 8px 16px; border: 1.5px dashed var(--border);
-      border-radius: var(--radius-sm); background: transparent;
-      color: var(--muted); font: inherit; font-size: 0.85rem;
-      cursor: pointer; transition: border-color 0.15s, color 0.15s;
-      width: 100%; justify-content: center;
+    .btn-remove-entry:hover { border-color: var(--danger); color: var(--danger); }
+    .btn-add-entry {
+      width: 100%; padding: 8px; border: 1.5px dashed var(--border);
+      border-radius: var(--radius-sm); background: transparent; color: var(--muted);
+      font: inherit; font-size: 0.84rem; cursor: pointer;
+      transition: border-color 0.15s, color 0.15s; text-align: center;
     }
-    .add-entry-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-add-entry:hover { border-color: var(--accent); color: var(--accent); }
+    .edit-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .btn-save-section {
+      padding: 8px 20px; background: var(--accent); color: #fff; border: none;
+      border-radius: var(--radius-sm); font: inherit; font-size: 0.88rem; font-weight: 700;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-save-section:hover { background: var(--accent-hover); }
+    .btn-cancel-section {
+      padding: 8px 16px; background: transparent; color: var(--muted);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      font: inherit; font-size: 0.88rem; cursor: pointer;
+    }
+
+    /* API settings card */
+    .api-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 18px; overflow: hidden; }
+    .api-key-field { position: relative; }
+    .api-key-field input { padding-right: 80px; }
+    .btn-toggle-key {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--muted); font-size: 0.78rem; cursor: pointer;
+      padding: 4px 8px;
+    }
+    .key-status { font-size: 0.78rem; margin-top: 4px; }
+    .key-status.set { color: var(--success); }
+    .key-status.unset { color: var(--muted); }
 
     /* Save bar */
     .save-bar {
-      position: sticky; bottom: 0; background: var(--surface);
-      border-top: 1px solid var(--border); padding: 14px 24px;
-      display: flex; align-items: center; gap: 12px;
-      box-shadow: 0 -4px 16px rgba(0,0,0,0.06); z-index: 10;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--surface); border-top: 1px solid var(--border);
+      padding: 12px 24px; display: flex; align-items: center; gap: 12px;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.07); z-index: 20;
     }
-    .btn-save-profile {
-      padding: 11px 28px; background: var(--accent); color: #fff;
-      border: none; border-radius: var(--radius-sm); font: inherit;
-      font-size: 0.95rem; font-weight: 700; cursor: pointer;
-      transition: background 0.15s;
+    .btn-save-all {
+      padding: 10px 28px; background: var(--accent); color: #fff; border: none;
+      border-radius: var(--radius-sm); font: inherit; font-size: 0.93rem; font-weight: 700;
+      cursor: pointer; transition: background 0.15s;
     }
-    .btn-save-profile:hover { background: var(--accent-hover); }
-    .save-msg { font-size: 0.85rem; color: var(--success); display: none; }
-    .save-msg.visible { display: block; }
+    .btn-save-all:hover { background: var(--accent-hover); }
+    .save-ok { font-size: 0.84rem; color: var(--success); display: none; }
+    .save-ok.show { display: block; }
+    .last-saved-txt { font-size: 0.78rem; color: var(--muted); }
 
-    .profile-using-notice {
-      background: rgba(37,99,235,0.06); border: 1px solid rgba(37,99,235,0.15);
-      border-radius: var(--radius-sm); padding: 10px 14px;
-      font-size: 0.83rem; color: var(--accent-2); margin-bottom: 20px;
-    }
+    /* Utility classes replacing inline styles */
+    .nav-email-txt { font-size: 0.82rem; color: var(--muted); }
+    .section-hint { margin: 0 0 12px; font-size: 0.82rem; color: var(--muted); }
+    .section-empty { margin: 12px 20px; }
+    .api-desc { margin: 0 0 16px; font-size: 0.86rem; color: var(--muted); }
   </style>
 </head>
 <body>
-  <script>
-    (function() { if (!localStorage.getItem('jh_auth')) window.location.replace('login.html'); })();
-  </script>
+<script>
+  (function(){ if(!localStorage.getItem('jh_auth')) window.location.replace('login.html'); })();
+</script>
 
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="index.html" class="nav-brand"><span class="dot"></span>JobHub</a>
-      <div class="nav-links">
-        <a href="index.html">About</a>
-        <a href="jobs.html">Jobs</a>
-        <a href="matcher.html">Matcher</a>
-        <a href="profile.html" class="active">Profile</a>
-      </div>
-      <div class="nav-right">
-        <div class="nav-user">
-          <div class="nav-user-avatar" id="nav-avatar">SD</div>
-          <span id="nav-email"></span>
-        </div>
-        <button type="button" class="nav-logout" id="nav-logout">Sign out</button>
-      </div>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand"><span class="dot"></span>JobHub</a>
+    <div class="nav-links">
+      <a href="index.html">About</a>
+      <a href="jobs.html">Jobs</a>
+      <a href="matcher.html">Matcher</a>
+      <a href="profile.html" class="active">Profile</a>
     </div>
-  </nav>
-
-  <div class="profile-page">
-
-    <!-- Hero card -->
-    <div class="profile-hero-card">
-      <div class="profile-avatar-big" id="hero-initials">SD</div>
-      <div class="profile-hero-info">
-        <h2 id="hero-name">Your Profile</h2>
-        <p id="hero-sub">Set up your profile — Jobs and Matcher will use this to score and suggest roles.</p>
+    <div class="nav-right">
+      <div class="nav-user">
+        <div class="nav-user-avatar" id="nav-avatar">SD</div>
+        <span id="nav-email" class="nav-email-txt"></span>
       </div>
+      <button type="button" class="nav-logout" id="nav-logout">Sign out</button>
     </div>
+  </div>
+</nav>
 
-    <div class="profile-using-notice">
-      ℹ️ Once saved, your profile is used by the <strong>Jobs</strong> page (to score job listings) and the <strong>Matcher</strong> page (as your baseline resume). Changes take effect immediately on save.
+<div class="profile-wrap">
+
+  <!-- Hero -->
+  <div class="profile-hero">
+    <div class="p-avatar" id="hero-initials">?</div>
+    <div class="p-hero-info">
+      <h2 id="hero-name">Your Profile</h2>
+      <p id="hero-sub">Set up your profile — Jobs and Matcher read from this.</p>
     </div>
-
-    <!-- Resume upload -->
-    <div class="profile-section-card">
-      <div class="profile-section-head">
-        <div class="section-dot"></div>
-        <h3>Quick Fill from Resume</h3>
-      </div>
-      <div class="profile-section-body">
-        <p class="muted small" style="margin:0;">Upload your DOCX resume to auto-fill the fields below. Your file is processed entirely in your browser — never uploaded anywhere.</p>
-        <div class="resume-upload-zone" id="upload-zone">
-          <div class="upload-zone-icon">📄</div>
-          <p><strong>Drag & drop your .docx resume here</strong></p>
-          <p>or</p>
-          <label class="upload-btn-label" for="resume-file-input">Choose .docx file</label>
-          <input type="file" id="resume-file-input" accept=".docx" hidden />
-        </div>
-        <div class="upload-status" id="upload-status"></div>
-      </div>
-    </div>
-
-    <!-- Basic info -->
-    <div class="profile-section-card">
-      <div class="profile-section-head">
-        <div class="section-dot"></div>
-        <h3>Basic Information</h3>
-      </div>
-      <div class="profile-section-body">
-        <div class="form-row">
-          <div class="form-field">
-            <label for="f-name">Full Name</label>
-            <input type="text" id="f-name" placeholder="Sainath Dasa" />
-          </div>
-          <div class="form-field">
-            <label for="f-title">Job Title / Role</label>
-            <input type="text" id="f-title" placeholder="Software Engineer" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-field">
-            <label for="f-email">Email</label>
-            <input type="email" id="f-email" placeholder="you@example.com" />
-          </div>
-          <div class="form-field">
-            <label for="f-phone">Phone (optional)</label>
-            <input type="text" id="f-phone" placeholder="+1 (555) 000-0000" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-field">
-            <label for="f-location">Location</label>
-            <input type="text" id="f-location" placeholder="City, State or Remote" />
-          </div>
-          <div class="form-field">
-            <label for="f-tagline">One-line tagline</label>
-            <input type="text" id="f-tagline" placeholder="Building reliable backend systems…" />
-          </div>
-        </div>
-        <div class="form-field">
-          <label for="f-summary">Professional Summary</label>
-          <textarea id="f-summary" class="tall" placeholder="Write a 2–4 sentence summary of your background, skills, and goals…"></textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-field">
-            <label for="f-github">GitHub URL</label>
-            <input type="url" id="f-github" placeholder="https://github.com/username" />
-          </div>
-          <div class="form-field">
-            <label for="f-linkedin">LinkedIn URL</label>
-            <input type="url" id="f-linkedin" placeholder="https://linkedin.com/in/username" />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Skills -->
-    <div class="profile-section-card">
-      <div class="profile-section-head">
-        <div class="section-dot"></div>
-        <h3>Skills</h3>
-      </div>
-      <div class="profile-section-body">
-        <p class="muted small" style="margin:0;">Enter comma-separated values. These are used directly to match against job descriptions.</p>
-        <div class="form-row">
-          <div class="form-field">
-            <label for="sk-languages">Languages</label>
-            <input type="text" id="sk-languages" placeholder="Python, JavaScript, TypeScript, Java, SQL" />
-          </div>
-          <div class="form-field">
-            <label for="sk-frameworks">Frameworks & Libraries</label>
-            <input type="text" id="sk-frameworks" placeholder="React, Node.js, Express, Flask, FastAPI" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-field">
-            <label for="sk-cloud">Cloud & DevOps</label>
-            <input type="text" id="sk-cloud" placeholder="AWS, Docker, Kubernetes, GitHub Actions" />
-          </div>
-          <div class="form-field">
-            <label for="sk-databases">Databases</label>
-            <input type="text" id="sk-databases" placeholder="PostgreSQL, MongoDB, Redis" />
-          </div>
-        </div>
-        <div class="form-field">
-          <label for="sk-tools">Tools & Other</label>
-          <input type="text" id="sk-tools" placeholder="Git, Linux, REST APIs, GraphQL" />
-        </div>
-      </div>
-    </div>
-
-    <!-- Experience -->
-    <div class="profile-section-card">
-      <div class="profile-section-head">
-        <div class="section-dot"></div>
-        <h3>Work Experience</h3>
-      </div>
-      <div class="profile-section-body">
-        <div id="exp-list"></div>
-        <button type="button" class="add-entry-btn" id="add-exp">+ Add Experience Entry</button>
-      </div>
-    </div>
-
-    <!-- Education -->
-    <div class="profile-section-card">
-      <div class="profile-section-head">
-        <div class="section-dot"></div>
-        <h3>Education</h3>
-      </div>
-      <div class="profile-section-body">
-        <div id="edu-list"></div>
-        <button type="button" class="add-entry-btn" id="add-edu">+ Add Education Entry</button>
-      </div>
-    </div>
-
-  </div><!-- /profile-page -->
-
-  <!-- Sticky save bar -->
-  <div class="save-bar">
-    <button type="button" class="btn-save-profile" id="save-btn">Save Profile</button>
-    <span class="save-msg" id="save-msg">✓ Profile saved — Jobs and Matcher will now use your profile.</span>
-    <span class="muted small" id="last-saved"></span>
   </div>
 
-  <script type="module">
-    import { escapeHtml } from './js/common.js';
+  <div class="profile-notice">
+    ℹ️ Upload your <strong>.docx resume</strong> to auto-fill all fields. Once saved, your profile is used by the <strong>Jobs</strong> page for scoring and the <strong>Matcher</strong> as your baseline resume.
+  </div>
 
-    // ---- Auth ----
-    const auth = JSON.parse(localStorage.getItem('jh_auth') || '{}');
-    document.getElementById('nav-avatar').textContent = auth.initials || 'SD';
-    document.getElementById('nav-email').textContent = auth.email || '';
-    document.getElementById('nav-logout').addEventListener('click', () => {
-      localStorage.removeItem('jh_auth');
-      window.location.replace('login.html');
-    });
+  <!-- Resume upload -->
+  <div class="upload-card">
+    <div class="card-head">
+      <div class="section-dot"></div>
+      <h3>Auto-fill from Resume</h3>
+    </div>
+    <div class="card-body">
+      <div class="upload-zone" id="upload-zone">
+        <div class="upload-zone-icon">📄</div>
+        <p><strong>Drag &amp; drop your .docx resume here</strong></p>
+        <p>Processed entirely in your browser — never uploaded to any server</p>
+        <label class="upload-file-label" for="resume-input">Choose .docx File</label>
+        <input type="file" id="resume-input" accept=".docx" hidden />
+      </div>
+      <div class="upload-status" id="upload-status"></div>
+    </div>
+  </div>
 
-    const PROFILE_KEY = 'jh_profile';
+  <!-- Basic Info -->
+  <div class="section-card" id="card-basic">
+    <div class="section-head">
+      <div class="section-dot"></div>
+      <h3>Basic Information</h3>
+      <button type="button" class="btn-edit-section" data-section="basic">Edit</button>
+    </div>
+    <div class="section-view" id="view-basic">
+      <div class="view-row"><span class="view-label">Name</span><span class="view-val" id="vw-name">—</span></div>
+      <div class="view-row"><span class="view-label">Title</span><span class="view-val" id="vw-title">—</span></div>
+      <div class="view-row"><span class="view-label">Email</span><span class="view-val" id="vw-email">—</span></div>
+      <div class="view-row"><span class="view-label">Phone</span><span class="view-val" id="vw-phone">—</span></div>
+      <div class="view-row"><span class="view-label">Location</span><span class="view-val" id="vw-location">—</span></div>
+      <div class="view-row"><span class="view-label">LinkedIn</span><span class="view-val" id="vw-linkedin">—</span></div>
+      <div class="view-row"><span class="view-label">GitHub</span><span class="view-val" id="vw-github">—</span></div>
+      <div class="view-row"><span class="view-label">Summary</span><span class="view-val" id="vw-summary">—</span></div>
+    </div>
+    <div class="section-edit" id="edit-basic">
+      <div class="form-row">
+        <div class="form-field"><label>Full Name</label><input type="text" id="f-name" placeholder="Sainath Dasa" /></div>
+        <div class="form-field"><label>Job Title</label><input type="text" id="f-title" placeholder="Software Engineer" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Email</label><input type="email" id="f-email" /></div>
+        <div class="form-field"><label>Phone</label><input type="text" id="f-phone" placeholder="+1 555-000-0000" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Location</label><input type="text" id="f-location" placeholder="City, State" /></div>
+        <div class="form-field"><label>Website / Portfolio</label><input type="url" id="f-website" placeholder="https://yoursite.com" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>LinkedIn URL</label><input type="url" id="f-linkedin" placeholder="https://linkedin.com/in/username" /></div>
+        <div class="form-field"><label>GitHub URL</label><input type="url" id="f-github" placeholder="https://github.com/username" /></div>
+      </div>
+      <div class="form-field"><label>Professional Summary</label><textarea id="f-summary" class="tall" placeholder="2–4 sentences summarising your background, skills, and goals…"></textarea></div>
+      <div class="edit-actions">
+        <button type="button" class="btn-save-section" data-section="basic">Save</button>
+        <button type="button" class="btn-cancel-section" data-section="basic">Cancel</button>
+      </div>
+    </div>
+  </div>
 
-    // ---- Helpers ----
-    function val(id) { return document.getElementById(id)?.value.trim() || ''; }
-    function setVal(id, v) { const el = document.getElementById(id); if (el && v) el.value = v; }
-    function splitList(s) { return (s || '').split(',').map(x => x.trim()).filter(Boolean); }
+  <!-- Skills -->
+  <div class="section-card" id="card-skills">
+    <div class="section-head">
+      <div class="section-dot"></div>
+      <h3>Skills</h3>
+      <button type="button" class="btn-edit-section" data-section="skills">Edit</button>
+    </div>
+    <div class="section-view" id="view-skills">
+      <div class="view-row"><span class="view-label">Languages</span><div class="chip-list" id="vw-sk-lang"></div></div>
+      <div class="view-row"><span class="view-label">Frameworks</span><div class="chip-list" id="vw-sk-fw"></div></div>
+      <div class="view-row"><span class="view-label">Cloud / DevOps</span><div class="chip-list" id="vw-sk-cloud"></div></div>
+      <div class="view-row"><span class="view-label">Databases</span><div class="chip-list" id="vw-sk-db"></div></div>
+      <div class="view-row"><span class="view-label">Tools</span><div class="chip-list" id="vw-sk-tools"></div></div>
+      <div class="view-row"><span class="view-label">Other</span><div class="chip-list" id="vw-sk-other"></div></div>
+    </div>
+    <div class="section-edit" id="edit-skills">
+      <p class="section-hint">Enter comma-separated values. These are matched directly against job descriptions.</p>
+      <div class="form-row">
+        <div class="form-field"><label>Languages</label><input type="text" id="sk-lang" placeholder="Python, JavaScript, TypeScript, Java, SQL" /></div>
+        <div class="form-field"><label>Frameworks &amp; Libraries</label><input type="text" id="sk-fw" placeholder="React, Node.js, Express, Flask, FastAPI" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Cloud &amp; DevOps</label><input type="text" id="sk-cloud" placeholder="AWS, Docker, Kubernetes, GitHub Actions" /></div>
+        <div class="form-field"><label>Databases</label><input type="text" id="sk-db" placeholder="PostgreSQL, MongoDB, Redis" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Tools &amp; Platforms</label><input type="text" id="sk-tools" placeholder="Git, Linux, REST APIs, GraphQL, Jira" /></div>
+        <div class="form-field"><label>Other Skills</label><input type="text" id="sk-other" placeholder="Machine Learning, Data Analysis, Agile" /></div>
+      </div>
+      <div class="edit-actions">
+        <button type="button" class="btn-save-section" data-section="skills">Save</button>
+        <button type="button" class="btn-cancel-section" data-section="skills">Cancel</button>
+      </div>
+    </div>
+  </div>
 
-    // ---- Experience entry template ----
-    function expEntryHtml(entry = {}, idx) {
-      return `
-        <div class="exp-entry" data-exp="${idx}">
-          <button type="button" class="entry-remove" data-remove-exp="${idx}">Remove</button>
-          <div class="form-row">
-            <div class="form-field">
-              <label>Role / Title</label>
-              <input type="text" class="exp-role" placeholder="Software Engineer" value="${escapeHtml(entry.role || '')}" />
-            </div>
-            <div class="form-field">
-              <label>Company</label>
-              <input type="text" class="exp-company" placeholder="Acme Corp" value="${escapeHtml(entry.company || '')}" />
-            </div>
+  <!-- Experience -->
+  <div class="section-card" id="card-experience">
+    <div class="section-head">
+      <div class="section-dot"></div>
+      <h3>Work Experience</h3>
+      <button type="button" class="btn-edit-section" data-section="experience">Edit</button>
+    </div>
+    <div class="section-view" id="view-experience"></div>
+    <div class="section-edit" id="edit-experience">
+      <div id="exp-entries"></div>
+      <button type="button" class="btn-add-entry" id="add-exp">+ Add Experience</button>
+      <div class="edit-actions">
+        <button type="button" class="btn-save-section" data-section="experience">Save</button>
+        <button type="button" class="btn-cancel-section" data-section="experience">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Education -->
+  <div class="section-card" id="card-education">
+    <div class="section-head">
+      <div class="section-dot"></div>
+      <h3>Education</h3>
+      <button type="button" class="btn-edit-section" data-section="education">Edit</button>
+    </div>
+    <div class="section-view" id="view-education"></div>
+    <div class="section-edit" id="edit-education">
+      <div id="edu-entries"></div>
+      <button type="button" class="btn-add-entry" id="add-edu">+ Add Education</button>
+      <div class="edit-actions">
+        <button type="button" class="btn-save-section" data-section="education">Save</button>
+        <button type="button" class="btn-cancel-section" data-section="education">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Certifications -->
+  <div class="section-card" id="card-certifications">
+    <div class="section-head">
+      <div class="section-dot"></div>
+      <h3>Certifications &amp; Licenses</h3>
+      <button type="button" class="btn-edit-section" data-section="certifications">Edit</button>
+    </div>
+    <div class="section-view" id="view-certifications"><p class="muted small section-empty">None added yet.</p></div>
+    <div class="section-edit" id="edit-certifications">
+      <div id="cert-entries"></div>
+      <button type="button" class="btn-add-entry" id="add-cert">+ Add Certification</button>
+      <div class="edit-actions">
+        <button type="button" class="btn-save-section" data-section="certifications">Save</button>
+        <button type="button" class="btn-cancel-section" data-section="certifications">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Publications -->
+  <div class="section-card" id="card-publications">
+    <div class="section-head">
+      <div class="section-dot"></div>
+      <h3>Publications &amp; Projects</h3>
+      <button type="button" class="btn-edit-section" data-section="publications">Edit</button>
+    </div>
+    <div class="section-view" id="view-publications"><p class="muted small section-empty">None added yet.</p></div>
+    <div class="section-edit" id="edit-publications">
+      <div id="pub-entries"></div>
+      <button type="button" class="btn-add-entry" id="add-pub">+ Add Publication / Project</button>
+      <div class="edit-actions">
+        <button type="button" class="btn-save-section" data-section="publications">Save</button>
+        <button type="button" class="btn-cancel-section" data-section="publications">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Settings -->
+  <div class="api-card" id="api-settings">
+    <div class="card-head">
+      <div class="section-dot"></div>
+      <h3>API Settings — Connect Job Sources &amp; AI</h3>
+    </div>
+    <div class="card-body">
+      <p class="api-desc">These keys are stored only in your browser. Sign up free at <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank" rel="noopener">RapidAPI → JSearch</a> to unlock LinkedIn, Indeed, and Glassdoor results.</p>
+      <div class="form-row">
+        <div class="form-field">
+          <label>RapidAPI Key (JSearch — LinkedIn, Indeed, Glassdoor)</label>
+          <div class="api-key-field">
+            <input type="password" id="rapid-key" placeholder="Paste your RapidAPI key here" />
+            <button type="button" class="btn-toggle-key" id="toggle-rapid">Show</button>
           </div>
-          <div class="form-row">
-            <div class="form-field">
-              <label>Start Year</label>
-              <input type="text" class="exp-start" placeholder="2022" value="${escapeHtml(entry.start || '')}" />
-            </div>
-            <div class="form-field">
-              <label>End Year (or Present)</label>
-              <input type="text" class="exp-end" placeholder="Present" value="${escapeHtml(entry.end || '')}" />
-            </div>
+          <span class="key-status" id="rapid-status">Not set — using free sources only</span>
+        </div>
+        <div class="form-field">
+          <label>Anthropic / Claude API Key (for AI-powered scoring)</label>
+          <div class="api-key-field">
+            <input type="password" id="ai-key" placeholder="Paste your Anthropic API key here" />
+            <button type="button" class="btn-toggle-key" id="toggle-ai">Show</button>
           </div>
-          <div class="form-field">
-            <label>Bullet Points (one per line)</label>
-            <textarea class="exp-bullets tall" placeholder="• Built REST APIs using Python and Flask…&#10;• Reduced latency by 40% through caching…">${(entry.bullets || []).join('\n')}</textarea>
-          </div>
-        </div>`;
-    }
+          <span class="key-status" id="ai-status">Not set — using keyword matching only</span>
+        </div>
+      </div>
+      <button type="button" class="btn-save-section" id="save-api-keys">Save API Keys</button>
+    </div>
+  </div>
 
-    function eduEntryHtml(entry = {}, idx) {
-      return `
-        <div class="edu-entry" data-edu="${idx}">
-          <button type="button" class="entry-remove" data-remove-edu="${idx}">Remove</button>
-          <div class="form-row">
-            <div class="form-field">
-              <label>Degree</label>
-              <input type="text" class="edu-degree" placeholder="M.S. in Computer Science" value="${escapeHtml(entry.degree || '')}" />
-            </div>
-            <div class="form-field">
-              <label>School</label>
-              <input type="text" class="edu-school" placeholder="University Name" value="${escapeHtml(entry.school || '')}" />
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-field">
-              <label>Year</label>
-              <input type="text" class="edu-year" placeholder="2023" value="${escapeHtml(entry.year || '')}" />
-            </div>
-            <div class="form-field">
-              <label>Location (optional)</label>
-              <input type="text" class="edu-location" placeholder="City, State" value="${escapeHtml(entry.location || '')}" />
-            </div>
-          </div>
-        </div>`;
-    }
+</div><!-- /profile-wrap -->
 
-    let expCount = 0;
-    let eduCount = 0;
+<!-- Save bar -->
+<div class="save-bar">
+  <button type="button" class="btn-save-all" id="save-all-btn">Save All Changes</button>
+  <span class="save-ok" id="save-ok">✓ Profile saved — Jobs and Matcher will now use your profile.</span>
+  <span class="last-saved-txt" id="last-saved"></span>
+</div>
 
-    function renderExpList(entries) {
-      const list = document.getElementById('exp-list');
-      list.innerHTML = '';
-      expCount = 0;
-      (entries || []).forEach(e => {
-        list.insertAdjacentHTML('beforeend', expEntryHtml(e, expCount++));
-      });
-      wireRemove();
-    }
+<script type="module">
+import { escapeHtml } from './js/common.js';
+import { store, KEYS } from './js/storage.js';
 
-    function renderEduList(entries) {
-      const list = document.getElementById('edu-list');
-      list.innerHTML = '';
-      eduCount = 0;
-      (entries || []).forEach(e => {
-        list.insertAdjacentHTML('beforeend', eduEntryHtml(e, eduCount++));
-      });
-      wireRemove();
-    }
+// ---- Auth ----
+const auth = JSON.parse(localStorage.getItem('jh_auth') || '{}');
+document.getElementById('nav-avatar').textContent = auth.initials || auth.email?.slice(0,2).toUpperCase() || 'SD';
+document.getElementById('nav-email').textContent = auth.email || '';
+document.getElementById('nav-logout').addEventListener('click', () => { localStorage.removeItem('jh_auth'); window.location.replace('login.html'); });
 
-    function wireRemove() {
-      document.querySelectorAll('[data-remove-exp]').forEach(btn =>
-        btn.addEventListener('click', () => { btn.closest('.exp-entry').remove(); })
-      );
-      document.querySelectorAll('[data-remove-edu]').forEach(btn =>
-        btn.addEventListener('click', () => { btn.closest('.edu-entry').remove(); })
-      );
-    }
+// ---- In-memory profile ----
+let profile = {
+  name:'', title:'', email: auth.email||'', phone:'', location:'', website:'', tagline:'',
+  links:{ linkedin:'', github:'' },
+  summary:'',
+  skills:{ languages:[], frameworks:[], cloud:[], databases:[], tools:[], other:[] },
+  experience:[], education:[], certifications:[], publications:[],
+  updatedAt: null
+};
 
-    document.getElementById('add-exp').addEventListener('click', () => {
-      document.getElementById('exp-list').insertAdjacentHTML('beforeend', expEntryHtml({}, expCount++));
-      wireRemove();
-    });
+// ---- Helpers ----
+function v(id){ return document.getElementById(id)?.value.trim() || ''; }
+function sv(id, val){ const el=document.getElementById(id); if(el && val!=null) el.value = val; }
+function splitCSV(s){ return (s||'').split(',').map(x=>x.trim()).filter(Boolean); }
+function chips(arr){ return arr.length ? arr.map(a=>`<span class="view-chip">${escapeHtml(a)}</span>`).join('') : '<span class="view-val empty">None</span>'; }
 
-    document.getElementById('add-edu').addEventListener('click', () => {
-      document.getElementById('edu-list').insertAdjacentHTML('beforeend', eduEntryHtml({}, eduCount++));
-      wireRemove();
-    });
+// ---- Hero update ----
+function updateHero(name, title){
+  if(name){
+    document.getElementById('hero-name').textContent = name;
+    const parts = name.trim().split(/\s+/);
+    document.getElementById('hero-initials').textContent = (parts[0][0]+(parts[1]?parts[1][0]:'')).toUpperCase();
+  }
+  if(title) document.getElementById('hero-sub').textContent = title;
+}
 
-    // ---- Collect form data ----
-    function collectProfile() {
-      const experience = [...document.querySelectorAll('.exp-entry')].map(el => ({
-        role: el.querySelector('.exp-role')?.value.trim() || '',
-        company: el.querySelector('.exp-company')?.value.trim() || '',
-        start: el.querySelector('.exp-start')?.value.trim() || '',
-        end: el.querySelector('.exp-end')?.value.trim() || '',
-        bullets: (el.querySelector('.exp-bullets')?.value || '').split('\n')
-          .map(b => b.replace(/^[•\-\*]\s*/, '').trim()).filter(Boolean)
-      })).filter(e => e.role || e.company);
+// ---- View renderers ----
+function renderViews(){
+  const p = profile;
+  // Basic
+  sv2('vw-name', p.name); sv2('vw-title', p.title); sv2('vw-email', p.email);
+  sv2('vw-phone', p.phone); sv2('vw-location', p.location);
+  sv2('vw-linkedin', p.links?.linkedin ? `<a href="${escapeHtml(p.links.linkedin)}" target="_blank">${escapeHtml(p.links.linkedin)}</a>` : '—', true);
+  sv2('vw-github',   p.links?.github   ? `<a href="${escapeHtml(p.links.github)}"   target="_blank">${escapeHtml(p.links.github)}</a>`   : '—', true);
+  sv2('vw-summary', p.summary);
 
-      const education = [...document.querySelectorAll('.edu-entry')].map(el => ({
-        degree: el.querySelector('.edu-degree')?.value.trim() || '',
-        school: el.querySelector('.edu-school')?.value.trim() || '',
-        year: el.querySelector('.edu-year')?.value.trim() || '',
-        location: el.querySelector('.edu-location')?.value.trim() || '',
-      })).filter(e => e.degree || e.school);
+  // Skills
+  const sk = p.skills||{};
+  document.getElementById('vw-sk-lang').innerHTML  = chips(sk.languages||[]);
+  document.getElementById('vw-sk-fw').innerHTML    = chips(sk.frameworks||[]);
+  document.getElementById('vw-sk-cloud').innerHTML = chips(sk.cloud||[]);
+  document.getElementById('vw-sk-db').innerHTML    = chips(sk.databases||[]);
+  document.getElementById('vw-sk-tools').innerHTML = chips(sk.tools||[]);
+  document.getElementById('vw-sk-other').innerHTML = chips(sk.other||[]);
 
-      return {
-        name: val('f-name'),
-        title: val('f-title'),
-        email: val('f-email'),
-        phone: val('f-phone'),
-        location: val('f-location'),
-        tagline: val('f-tagline'),
-        summary: val('f-summary'),
-        links: {
-          github: val('f-github'),
-          linkedin: val('f-linkedin'),
-        },
-        skills: {
-          languages: splitList(val('sk-languages')),
-          frameworks: splitList(val('sk-frameworks')),
-          cloud: splitList(val('sk-cloud')),
-          databases: splitList(val('sk-databases')),
-          tools: splitList(val('sk-tools')),
-        },
-        experience,
-        education,
-        updatedAt: new Date().toISOString(),
-      };
-    }
+  // Experience
+  const vExp = document.getElementById('view-experience');
+  vExp.innerHTML = (p.experience||[]).length ? (p.experience||[]).map(e=>`
+    <div class="exp-view-entry" style="padding:12px 20px;">
+      <div class="entry-head-line">${escapeHtml(e.role||'')}${e.company?' — '+escapeHtml(e.company):''}</div>
+      <div class="entry-sub-line">${escapeHtml(e.location||'')} ${e.start||''} ${e.end?'→ '+e.end:''}</div>
+      ${(e.bullets||[]).length ? `<ul class="bullet-list">${(e.bullets||[]).map(b=>`<li>${escapeHtml(b)}</li>`).join('')}</ul>` : ''}
+    </div>`).join('') : '<p class="muted small" style="margin:12px 20px;">No experience added yet.</p>';
 
-    // ---- Load profile into form ----
-    function loadIntoForm(p) {
-      if (!p) return;
-      setVal('f-name', p.name);
-      setVal('f-title', p.title);
-      setVal('f-email', p.email);
-      setVal('f-phone', p.phone);
-      setVal('f-location', p.location);
-      setVal('f-tagline', p.tagline);
-      setVal('f-summary', p.summary);
-      setVal('f-github', (p.links || {}).github);
-      setVal('f-linkedin', (p.links || {}).linkedin);
-      const sk = p.skills || {};
-      setVal('sk-languages', (sk.languages || []).join(', '));
-      setVal('sk-frameworks', (sk.frameworks || []).join(', '));
-      setVal('sk-cloud', (sk.cloud || []).join(', '));
-      setVal('sk-databases', (sk.databases || []).join(', '));
-      setVal('sk-tools', (sk.tools || []).join(', '));
-      renderExpList(p.experience || []);
-      renderEduList(p.education || []);
-      updateHero(p.name, p.title);
-    }
+  // Education
+  const vEdu = document.getElementById('view-education');
+  vEdu.innerHTML = (p.education||[]).length ? (p.education||[]).map(e=>`
+    <div class="edu-view-entry" style="padding:12px 20px;">
+      <div class="entry-head-line">${escapeHtml(e.degree||'')}${e.school?' — '+escapeHtml(e.school):''}</div>
+      <div class="entry-sub-line">${escapeHtml(e.location||'')} ${e.year||''}</div>
+    </div>`).join('') : '<p class="muted small" style="margin:12px 20px;">No education added yet.</p>';
 
-    function updateHero(name, title) {
-      if (name) {
-        document.getElementById('hero-name').textContent = name;
-        const parts = name.trim().split(' ');
-        const initials = (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
-        document.getElementById('hero-initials').textContent = initials;
+  // Certifications
+  const vCert = document.getElementById('view-certifications');
+  vCert.innerHTML = (p.certifications||[]).length ? (p.certifications||[]).map(c=>`
+    <div class="cert-view-entry" style="padding:10px 20px;">
+      <div class="entry-head-line">${escapeHtml(c.name||'')}</div>
+      <div class="entry-sub-line">${escapeHtml(c.issuer||'')} ${c.year||''}</div>
+    </div>`).join('') : '<p class="muted small" style="margin:12px 20px;">No certifications added yet.</p>';
+
+  // Publications
+  const vPub = document.getElementById('view-publications');
+  vPub.innerHTML = (p.publications||[]).length ? (p.publications||[]).map(pub=>`
+    <div class="cert-view-entry" style="padding:10px 20px;">
+      <div class="entry-head-line">${escapeHtml(pub.title||'')}</div>
+      <div class="entry-sub-line">${escapeHtml(pub.venue||'')} ${pub.year||''}${pub.url?' · <a href="'+escapeHtml(pub.url)+'" target="_blank">Link</a>':''}</div>
+      ${pub.description ? `<div style="font-size:0.83rem;color:var(--muted);margin-top:4px;">${escapeHtml(pub.description)}</div>` : ''}
+    </div>`).join('') : '<p class="muted small" style="margin:12px 20px;">No publications or projects added yet.</p>';
+
+  updateHero(p.name, p.title);
+}
+
+function sv2(id, val, html=false){
+  const el = document.getElementById(id); if(!el) return;
+  if(html) el.innerHTML = val || '<span class="view-val empty">—</span>';
+  else el.textContent = val || '—';
+}
+
+// ---- Load edit form from profile ----
+function loadEditForms(){
+  const p = profile;
+  sv('f-name', p.name); sv('f-title', p.title); sv('f-email', p.email);
+  sv('f-phone', p.phone); sv('f-location', p.location); sv('f-website', p.website);
+  sv('f-linkedin', p.links?.linkedin); sv('f-github', p.links?.github);
+  sv('f-summary', p.summary);
+  const sk = p.skills||{};
+  sv('sk-lang',  (sk.languages||[]).join(', '));
+  sv('sk-fw',    (sk.frameworks||[]).join(', '));
+  sv('sk-cloud', (sk.cloud||[]).join(', '));
+  sv('sk-db',    (sk.databases||[]).join(', '));
+  sv('sk-tools', (sk.tools||[]).join(', '));
+  sv('sk-other', (sk.other||[]).join(', '));
+  renderExpEntries(p.experience||[]);
+  renderEduEntries(p.education||[]);
+  renderCertEntries(p.certifications||[]);
+  renderPubEntries(p.publications||[]);
+}
+
+// ---- Collect section data from forms ----
+function collectBasic(){
+  return { name:v('f-name'), title:v('f-title'), email:v('f-email'), phone:v('f-phone'),
+    location:v('f-location'), website:v('f-website'), tagline:v('f-title'),
+    summary:v('f-summary'), links:{ linkedin:v('f-linkedin'), github:v('f-github') } };
+}
+function collectSkills(){
+  return { languages:splitCSV(v('sk-lang')), frameworks:splitCSV(v('sk-fw')),
+    cloud:splitCSV(v('sk-cloud')), databases:splitCSV(v('sk-db')),
+    tools:splitCSV(v('sk-tools')), other:splitCSV(v('sk-other')) };
+}
+function collectExpEntries(){
+  return [...document.querySelectorAll('.exp-entry-card')].map(el=>({
+    role: el.querySelector('.exp-role')?.value.trim()||'',
+    company: el.querySelector('.exp-company')?.value.trim()||'',
+    location: el.querySelector('.exp-loc')?.value.trim()||'',
+    start: el.querySelector('.exp-start')?.value.trim()||'',
+    end: el.querySelector('.exp-end')?.value.trim()||'',
+    bullets:(el.querySelector('.exp-bullets')?.value||'').split('\n').map(b=>b.replace(/^[•\-\*]\s*/,'')).filter(Boolean)
+  })).filter(e=>e.role||e.company);
+}
+function collectEduEntries(){
+  return [...document.querySelectorAll('.edu-entry-card')].map(el=>({
+    degree:el.querySelector('.edu-degree')?.value.trim()||'',
+    school:el.querySelector('.edu-school')?.value.trim()||'',
+    year:el.querySelector('.edu-year')?.value.trim()||'',
+    location:el.querySelector('.edu-loc')?.value.trim()||''
+  })).filter(e=>e.degree||e.school);
+}
+function collectCertEntries(){
+  return [...document.querySelectorAll('.cert-entry-card')].map(el=>({
+    name:el.querySelector('.cert-name')?.value.trim()||'',
+    issuer:el.querySelector('.cert-issuer')?.value.trim()||'',
+    year:el.querySelector('.cert-year')?.value.trim()||''
+  })).filter(e=>e.name);
+}
+function collectPubEntries(){
+  return [...document.querySelectorAll('.pub-entry-card')].map(el=>({
+    title:el.querySelector('.pub-title')?.value.trim()||'',
+    venue:el.querySelector('.pub-venue')?.value.trim()||'',
+    year:el.querySelector('.pub-year')?.value.trim()||'',
+    url:el.querySelector('.pub-url')?.value.trim()||'',
+    description:el.querySelector('.pub-desc')?.value.trim()||''
+  })).filter(e=>e.title);
+}
+
+// ---- Entry templates ----
+function expEntryHTML(e={}){
+  return `<div class="entry-card exp-entry-card">
+    <button type="button" class="btn-remove-entry">✕</button>
+    <div class="form-row">
+      <div class="form-field"><label>Role / Title</label><input class="exp-role" type="text" value="${escapeHtml(e.role||'')}" placeholder="Software Engineer" /></div>
+      <div class="form-field"><label>Company</label><input class="exp-company" type="text" value="${escapeHtml(e.company||'')}" placeholder="Google" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Location</label><input class="exp-loc" type="text" value="${escapeHtml(e.location||'')}" placeholder="City, State or Remote" /></div>
+      <div class="form-field" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div><label style="font-size:0.78rem;font-weight:600;">Start</label><input class="exp-start" type="text" value="${escapeHtml(e.start||'')}" placeholder="2022" /></div>
+        <div><label style="font-size:0.78rem;font-weight:600;">End</label><input class="exp-end" type="text" value="${escapeHtml(e.end||'')}" placeholder="Present" /></div>
+      </div>
+    </div>
+    <div class="form-field"><label>Bullet Points (one per line)</label>
+      <textarea class="exp-bullets tall" placeholder="• Built REST APIs…&#10;• Reduced latency by 40%…&#10;• Led migration to AWS">${(e.bullets||[]).join('\n')}</textarea>
+    </div>
+  </div>`;
+}
+function eduEntryHTML(e={}){
+  return `<div class="entry-card edu-entry-card">
+    <button type="button" class="btn-remove-entry">✕</button>
+    <div class="form-row">
+      <div class="form-field"><label>Degree</label><input class="edu-degree" type="text" value="${escapeHtml(e.degree||'')}" placeholder="M.S. Computer Science" /></div>
+      <div class="form-field"><label>School</label><input class="edu-school" type="text" value="${escapeHtml(e.school||'')}" placeholder="University of Florida" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Year</label><input class="edu-year" type="text" value="${escapeHtml(e.year||'')}" placeholder="2023" /></div>
+      <div class="form-field"><label>Location</label><input class="edu-loc" type="text" value="${escapeHtml(e.location||'')}" placeholder="Gainesville, FL" /></div>
+    </div>
+  </div>`;
+}
+function certEntryHTML(c={}){
+  return `<div class="entry-card cert-entry-card">
+    <button type="button" class="btn-remove-entry">✕</button>
+    <div class="form-row">
+      <div class="form-field"><label>Certification Name</label><input class="cert-name" type="text" value="${escapeHtml(c.name||'')}" placeholder="AWS Solutions Architect" /></div>
+      <div class="form-field"><label>Issuing Organization</label><input class="cert-issuer" type="text" value="${escapeHtml(c.issuer||'')}" placeholder="Amazon Web Services" /></div>
+    </div>
+    <div class="form-field"><label>Year</label><input class="cert-year" type="text" value="${escapeHtml(c.year||'')}" placeholder="2024" style="max-width:120px;" /></div>
+  </div>`;
+}
+function pubEntryHTML(p={}){
+  return `<div class="entry-card pub-entry-card">
+    <button type="button" class="btn-remove-entry">✕</button>
+    <div class="form-field"><label>Title</label><input class="pub-title" type="text" value="${escapeHtml(p.title||'')}" placeholder="Research paper or project name" /></div>
+    <div class="form-row">
+      <div class="form-field"><label>Venue / Journal / Platform</label><input class="pub-venue" type="text" value="${escapeHtml(p.venue||'')}" placeholder="IEEE, GitHub, Medium…" /></div>
+      <div class="form-field"><label>Year</label><input class="pub-year" type="text" value="${escapeHtml(p.year||'')}" placeholder="2024" /></div>
+    </div>
+    <div class="form-field"><label>URL (optional)</label><input class="pub-url" type="url" value="${escapeHtml(p.url||'')}" placeholder="https://…" /></div>
+    <div class="form-field"><label>Short Description</label><textarea class="pub-desc" placeholder="One sentence about this work.">${escapeHtml(p.description||'')}</textarea></div>
+  </div>`;
+}
+
+function renderExpEntries(arr){ document.getElementById('exp-entries').innerHTML = arr.map(expEntryHTML).join(''); wireRemove(); }
+function renderEduEntries(arr){ document.getElementById('edu-entries').innerHTML = arr.map(eduEntryHTML).join(''); wireRemove(); }
+function renderCertEntries(arr){ document.getElementById('cert-entries').innerHTML = arr.map(certEntryHTML).join(''); wireRemove(); }
+function renderPubEntries(arr){ document.getElementById('pub-entries').innerHTML = arr.map(pubEntryHTML).join(''); wireRemove(); }
+
+function wireRemove(){
+  document.querySelectorAll('.btn-remove-entry').forEach(btn =>
+    btn.addEventListener('click', () => btn.closest('.entry-card').remove())
+  );
+}
+
+document.getElementById('add-exp').addEventListener('click', () => { document.getElementById('exp-entries').insertAdjacentHTML('beforeend', expEntryHTML()); wireRemove(); });
+document.getElementById('add-edu').addEventListener('click', () => { document.getElementById('edu-entries').insertAdjacentHTML('beforeend', eduEntryHTML()); wireRemove(); });
+document.getElementById('add-cert').addEventListener('click', () => { document.getElementById('cert-entries').insertAdjacentHTML('beforeend', certEntryHTML()); wireRemove(); });
+document.getElementById('add-pub').addEventListener('click', () => { document.getElementById('pub-entries').insertAdjacentHTML('beforeend', pubEntryHTML()); wireRemove(); });
+
+// ---- Edit / Save / Cancel section toggle ----
+document.querySelectorAll('.btn-edit-section').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const sec = btn.dataset.section;
+    const editEl = document.getElementById('edit-' + sec);
+    const isOpen = editEl.classList.contains('open');
+    if(!isOpen){ loadEditForms(); editEl.classList.add('open'); btn.textContent = 'Cancel'; btn.classList.add('active'); }
+    else { editEl.classList.remove('open'); btn.textContent = 'Edit'; btn.classList.remove('active'); }
+  });
+});
+
+document.querySelectorAll('.btn-save-section').forEach(btn => {
+  if(btn.id === 'save-api-keys') return; // handled separately
+  btn.addEventListener('click', () => {
+    const sec = btn.dataset.section;
+    applySection(sec);
+    document.getElementById('edit-' + sec).classList.remove('open');
+    const editBtn = document.querySelector(`.btn-edit-section[data-section="${sec}"]`);
+    if(editBtn){ editBtn.textContent = 'Edit'; editBtn.classList.remove('active'); }
+    renderViews();
+    saveAll();
+  });
+});
+
+document.querySelectorAll('.btn-cancel-section').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const sec = btn.dataset.section;
+    document.getElementById('edit-' + sec).classList.remove('open');
+    const editBtn = document.querySelector(`.btn-edit-section[data-section="${sec}"]`);
+    if(editBtn){ editBtn.textContent = 'Edit'; editBtn.classList.remove('active'); }
+  });
+});
+
+function applySection(sec){
+  if(sec === 'basic'){       Object.assign(profile, collectBasic()); }
+  if(sec === 'skills'){      profile.skills = collectSkills(); }
+  if(sec === 'experience'){  profile.experience = collectExpEntries(); }
+  if(sec === 'education'){   profile.education = collectEduEntries(); }
+  if(sec === 'certifications'){ profile.certifications = collectCertEntries(); }
+  if(sec === 'publications'){ profile.publications = collectPubEntries(); }
+}
+
+// ---- API keys ----
+['rapid','ai'].forEach(k => {
+  document.getElementById(`toggle-${k}`).addEventListener('click', () => {
+    const inp = document.getElementById(`${k}-key`);
+    const isPass = inp.type === 'password';
+    inp.type = isPass ? 'text' : 'password';
+    document.getElementById(`toggle-${k}`).textContent = isPass ? 'Hide' : 'Show';
+  });
+});
+
+document.getElementById('save-api-keys').addEventListener('click', () => {
+  const rk = document.getElementById('rapid-key').value.trim();
+  const ak = document.getElementById('ai-key').value.trim();
+  if(rk) store.set(KEYS.RAPID_API_KEY, rk); else store.remove(KEYS.RAPID_API_KEY);
+  if(ak) store.set(KEYS.AI_API_KEY, ak); else store.remove(KEYS.AI_API_KEY);
+  updateKeyStatuses();
+  const btn = document.getElementById('save-api-keys');
+  btn.textContent = '✓ Keys Saved'; setTimeout(() => btn.textContent = 'Save API Keys', 2000);
+});
+
+function updateKeyStatuses(){
+  const rk = store.get(KEYS.RAPID_API_KEY);
+  const ak = store.get(KEYS.AI_API_KEY);
+  const rs = document.getElementById('rapid-status'), as = document.getElementById('ai-status');
+  rs.textContent = rk ? '✓ Key set — LinkedIn/Indeed/Glassdoor enabled' : 'Not set — using free sources only';
+  rs.className = 'key-status ' + (rk ? 'set' : 'unset');
+  as.textContent = ak ? '✓ Key set — AI-powered scoring enabled' : 'Not set — using keyword matching only';
+  as.className = 'key-status ' + (ak ? 'set' : 'unset');
+  // Pre-fill inputs (masked)
+  if(rk) document.getElementById('rapid-key').value = rk;
+  if(ak) document.getElementById('ai-key').value = ak;
+}
+
+// ---- Save all ----
+function saveAll(){
+  profile.updatedAt = new Date().toISOString();
+  store.setJSON(KEYS.PROFILE, profile);
+  const ok = document.getElementById('save-ok');
+  ok.classList.add('show');
+  document.getElementById('last-saved').textContent = 'Saved ' + new Date().toLocaleTimeString();
+  setTimeout(() => ok.classList.remove('show'), 3500);
+}
+
+document.getElementById('save-all-btn').addEventListener('click', () => {
+  // Collect all sections
+  ['basic','skills','experience','education','certifications','publications'].forEach(applySection);
+  renderViews(); saveAll();
+});
+
+// ---- DOCX parsing ----
+function showUploadStatus(type, msg){
+  const el = document.getElementById('upload-status');
+  el.className = 'upload-status ' + type;
+  el.textContent = msg;
+}
+
+function parseDocx(xml){
+  // Normalise paragraph list
+  const paragraphs = [...xml.matchAll(/<w:p[ >][\s\S]*?<\/w:p>/g)].map(m => {
+    const raw = m[0];
+    const text = [...raw.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(t=>t[1]).join('').trim();
+    const bold = /<w:b[ \/>]|<w:b>/.test(raw);
+    const caps = text.length > 1 && text.length < 70 && text === text.toUpperCase() && /[A-Z]/.test(text);
+    const headingStyle = /<w:pStyle w:val="[^"]*[Hh]eading/.test(raw);
+    const isBullet = /<w:numPr/.test(raw);
+    return { text, bold, caps, headingStyle, isBullet };
+  }).filter(p => p.text);
+
+  const result = {
+    name:'', title:'', summary:'', email:'', phone:'', location:'', linkedin:'', github:'',
+    skills:{ languages:[], frameworks:[], cloud:[], databases:[], tools:[], other:[] },
+    experience:[], education:[], certifications:[], publications:[]
+  };
+
+  let section = 'header';
+  let currentExp = null;
+  let currentEdu = null;
+
+  const isHeading = p => p.headingStyle || (p.bold && p.caps) || (p.caps && p.text.length < 50);
+
+  const sectionMap = {
+    summary:   /^(summary|professional summary|objective|profile|about me)/i,
+    skills:    /^(skills|technical skills|core competencies|technologies|tools|proficiencies)/i,
+    experience:/^(experience|work experience|professional experience|employment|career)/i,
+    education: /^(education|academic|degree|university|college)/i,
+    certifications:/^(certif|license|credential|accreditation)/i,
+    publications:  /^(publication|research|project|portfolio|paper)/i,
+  };
+
+  // Email / phone / linkedin regex
+  const emailRe = /[\w.+-]+@[\w-]+\.[a-z]{2,}/i;
+  const phoneRe = /(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}/;
+  const linkedinRe = /linkedin\.com\/in\/[\w-]+/i;
+  const githubRe   = /github\.com\/[\w-]+/i;
+
+  let headerDone = false;
+  let summaryLines = [];
+
+  for(let i=0; i<paragraphs.length; i++){
+    const p = paragraphs[i];
+    const t = p.text;
+
+    // Extract contact info from any paragraph
+    const emailM = t.match(emailRe);    if(emailM && !result.email) result.email = emailM[0];
+    const phoneM = t.match(phoneRe);    if(phoneM && !result.phone) result.phone = phoneM[0];
+    const liM = t.match(linkedinRe);    if(liM && !result.linkedin) result.linkedin = 'https://' + liM[0];
+    const ghM = t.match(githubRe);      if(ghM && !result.github)   result.github   = 'https://' + ghM[0];
+
+    if(isHeading(p)){
+      headerDone = true;
+      let matched = false;
+      for(const [sec, re] of Object.entries(sectionMap)){
+        if(re.test(t)){ section = sec; matched = true; currentExp = null; currentEdu = null; break; }
       }
-      if (title) document.getElementById('hero-sub').textContent = title;
+      if(!matched && section !== 'header') section = 'other';
+      continue;
     }
 
-    // ---- DOCX parsing ----
-    function escXml(s) {
-      return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    if(!headerDone){
+      // First non-heading lines are name/title/contact
+      if(!result.name && !emailM && !phoneM && !liM && !ghM && t.length < 60 && !t.includes(',')) result.name = t;
+      else if(!result.title && !result.name && t.length < 60) result.title = t;
+      else if(result.name && !result.title && t.length < 80 && !emailM && !phoneM) result.title = t;
+      continue;
     }
 
-    function extractXmlSections(xml) {
-      const sections = { summary: [], skills: {}, experience: [], education: [] };
-      let current = 'other';
-      let currentExpEntry = null;
-      const allParts = [];
-      let expIdx = -1;
+    if(section === 'summary') summaryLines.push(t);
 
-      const paragraphs = [...xml.matchAll(/<w:p[ >][\s\S]*?<\/w:p>/g)];
-      for (const m of paragraphs) {
-        const paraXml = m[0];
-        const texts = [...paraXml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(t => t[1]);
-        const text = texts.join('').trim();
-        if (!text) continue;
-        allParts.push(text);
-
-        const isBold = /<w:b[ \/>]|<w:b>/.test(paraXml);
-        const isAllCaps = text.length < 60 && text === text.toUpperCase() && /[A-Z]/.test(text);
-        const isHeadingStyle = /<w:pStyle w:val="[^"]*[Hh]eading/.test(paraXml);
-        const isHeading = isHeadingStyle || (isBold && isAllCaps);
-
-        if (isHeading) {
-          const t = text.toLowerCase();
-          if (/summary|objective|profile|about/.test(t)) current = 'summary';
-          else if (/skills?|technical|competenc|technolog|proficien/.test(t)) current = 'skills';
-          else if (/experience|employment|work|career|professional/.test(t)) current = 'experience';
-          else if (/education|academic|degree|university|college/.test(t)) current = 'education';
-          else current = 'other';
-          continue;
-        }
-
-        if (current === 'summary') sections.summary.push(text);
-        else if (current === 'skills') {
-          // Try to parse "Category: item1, item2" format
-          const colon = text.indexOf(':');
-          if (colon > 0 && colon < 30) {
-            const cat = text.slice(0, colon).trim().toLowerCase().replace(/\s+/g, '_');
-            const items = text.slice(colon + 1).split(/[,;]/).map(x => x.trim()).filter(Boolean);
-            sections.skills[cat] = items;
-          }
-        } else if (current === 'experience') {
-          // Detect new company entry (bold or title-case, short)
-          const isBoldEntry = /<w:b[ \/>]/.test(paraXml) && text.length < 80;
-          if (isBoldEntry && !text.startsWith('•') && !text.startsWith('-')) {
-            currentExpEntry = { role: text, company: '', start: '', end: '', bullets: [] };
-            sections.experience.push(currentExpEntry);
-          } else if (currentExpEntry) {
-            if (text.startsWith('•') || text.startsWith('-') || text.startsWith('*')) {
-              currentExpEntry.bullets.push(text.replace(/^[•\-\*]\s*/, ''));
-            } else if (!currentExpEntry.company && !text.match(/^\d{4}/)) {
-              currentExpEntry.company = text;
-            }
-          }
-        } else if (current === 'education') {
-          sections.education.push({ degree: text, school: '', year: '', location: '' });
-        }
-      }
-
-      return { allText: allParts.join(' '), sections };
-    }
-
-    // ---- DOCX upload handler ----
-    const uploadZone = document.getElementById('upload-zone');
-    const fileInput = document.getElementById('resume-file-input');
-    const uploadStatus = document.getElementById('upload-status');
-
-    function showUploadStatus(type, msg) {
-      uploadStatus.className = 'upload-status ' + type;
-      uploadStatus.textContent = msg;
-    }
-
-    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
-    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
-    uploadZone.addEventListener('drop', e => {
-      e.preventDefault(); uploadZone.classList.remove('drag-over');
-      if (e.dataTransfer.files[0]) handleDocxUpload(e.dataTransfer.files[0]);
-    });
-    fileInput.addEventListener('change', e => {
-      if (e.target.files[0]) handleDocxUpload(e.target.files[0]);
-      e.target.value = '';
-    });
-
-    async function handleDocxUpload(file) {
-      if (!file.name.toLowerCase().endsWith('.docx')) {
-        showUploadStatus('error', 'Please upload a .docx file. PDF is not yet supported for auto-fill.');
-        return;
-      }
-      showUploadStatus('loading', 'Parsing resume… this takes a moment.');
-      try {
-        const buf = await file.arrayBuffer();
-        const zip = await JSZip.loadAsync(buf);
-        const xml = await zip.file('word/document.xml').async('string');
-        const { allText, sections } = extractXmlSections(xml);
-
-        // Try to auto-fill what we can
-        const name = allText.split(/\n/)[0]?.slice(0, 60).trim() || '';
-        if (name && !document.getElementById('f-name').value) setVal('f-name', name);
-
-        if (sections.summary.length) {
-          setVal('f-summary', sections.summary.join(' '));
-        }
-
-        // Skills
-        if (Object.keys(sections.skills).length > 0) {
-          const sk = sections.skills;
-          const lang = sk.languages || sk.programming_languages || sk.language || sk.languages_ || [];
-          const fw = sk.frameworks || sk.libraries || sk.frameworks_libraries || [];
-          const cloud = sk.cloud || sk.cloud_devops || sk.devops || [];
-          const db = sk.databases || sk.database || [];
-          const tools = sk.tools || sk.other || sk.other_tools || [];
-          if (lang.length) setVal('sk-languages', lang.join(', '));
-          if (fw.length) setVal('sk-frameworks', fw.join(', '));
-          if (cloud.length) setVal('sk-cloud', cloud.join(', '));
-          if (db.length) setVal('sk-databases', db.join(', '));
-          if (tools.length) setVal('sk-tools', tools.join(', '));
-        }
-
-        // Experience
-        if (sections.experience.length > 0) {
-          renderExpList(sections.experience);
-        }
-
-        // Education
-        if (sections.education.length > 0) {
-          renderEduList(sections.education);
-        }
-
-        showUploadStatus('success', `✓ Parsed "${file.name}" — review the filled fields below and save.`);
-      } catch (err) {
-        console.error(err);
-        showUploadStatus('error', 'Could not parse file: ' + err.message + '. Try filling the fields manually.');
+    if(section === 'skills'){
+      // "Category: item1, item2" or just "item1, item2, item3"
+      const colon = t.indexOf(':');
+      if(colon > 0 && colon < 35){
+        const cat = t.slice(0,colon).toLowerCase();
+        const items = t.slice(colon+1).split(/[,;|]/).map(x=>x.trim()).filter(Boolean);
+        if(/lang|programm/i.test(cat)) result.skills.languages.push(...items);
+        else if(/frame|librar/i.test(cat)) result.skills.frameworks.push(...items);
+        else if(/cloud|devops|infra/i.test(cat)) result.skills.cloud.push(...items);
+        else if(/data|db|sql/i.test(cat)) result.skills.databases.push(...items);
+        else if(/tool|platform/i.test(cat)) result.skills.tools.push(...items);
+        else result.skills.other.push(...items);
+      } else if(t.includes(',')){
+        result.skills.other.push(...t.split(',').map(x=>x.trim()).filter(Boolean));
       }
     }
 
-    // ---- Save profile ----
-    document.getElementById('save-btn').addEventListener('click', () => {
-      const profile = collectProfile();
-      localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
-      updateHero(profile.name, profile.title);
-      const msg = document.getElementById('save-msg');
-      msg.classList.add('visible');
-      const ts = document.getElementById('last-saved');
-      ts.textContent = 'Last saved: ' + new Date().toLocaleTimeString();
-      setTimeout(() => msg.classList.remove('visible'), 4000);
-    });
-
-    // ---- Init: load existing profile ----
-    (function init() {
-      // Pre-fill with auth email
-      const authEmail = auth.email || '';
-      if (authEmail) {
-        const nameFromEmail = authEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-        document.getElementById('f-name').placeholder = nameFromEmail;
-        document.getElementById('f-email').value = authEmail;
-      }
-
-      // Load saved profile
-      try {
-        const raw = localStorage.getItem(PROFILE_KEY);
-        if (raw) {
-          const p = JSON.parse(raw);
-          loadIntoForm(p);
-          const ts = document.getElementById('last-saved');
-          if (p.updatedAt) ts.textContent = 'Last saved: ' + new Date(p.updatedAt).toLocaleString();
+    if(section === 'experience'){
+      // New entry: bold line that isn't a bullet and contains a company/role indicator
+      const looksLikeEntry = (p.bold || p.caps) && !p.isBullet && t.length < 120;
+      if(looksLikeEntry){
+        // Check if it looks like a date range → part of previous entry header
+        const hasDate = /\d{4}/.test(t);
+        if(currentExp && hasDate && !currentExp.end){
+          // It's a date/period line for current entry
+          const yearMatch = t.match(/(\d{4})\s*[-–—to]*\s*(\d{4}|present|current)?/i);
+          if(yearMatch){ currentExp.start = yearMatch[1]; currentExp.end = yearMatch[2] || 'Present'; }
+          currentExp.location = t.replace(/\d{4}[-–—to\s]+(\d{4}|present|current)?/i,'').trim();
         } else {
-          // Load default from data/resume.json as a starting point
-          fetch('data/resume.json').then(r => r.json()).then(p => loadIntoForm(p)).catch(() => {});
-          renderExpList([]);
-          renderEduList([]);
+          currentExp = { role:'', company:'', location:'', start:'', end:'', bullets:[] };
+          // Heuristic: "Role at Company" or "Role | Company" or "Role — Company"
+          const sep = t.match(/\s+(at|@|\||–|—|-)\s+/i);
+          if(sep){ currentExp.role = t.slice(0, sep.index).trim(); currentExp.company = t.slice(sep.index + sep[0].length).trim(); }
+          else { currentExp.role = t; }
+          result.experience.push(currentExp);
         }
-      } catch (e) {
-        renderExpList([]);
-        renderEduList([]);
+      } else if(currentExp && (p.isBullet || t.startsWith('•') || t.startsWith('-'))){
+        currentExp.bullets.push(t.replace(/^[•\-\*]\s*/,''));
+      } else if(currentExp && !currentExp.company && !p.isBullet && t.length < 80){
+        currentExp.company = t;
       }
-    })();
-  </script>
+    }
+
+    if(section === 'education'){
+      if((p.bold || p.caps) && !p.isBullet){
+        currentEdu = { degree:'', school:'', year:'', location:'' };
+        const sep = t.match(/\s+(at|@|\||–|—|-)\s+/i);
+        if(sep){ currentEdu.degree = t.slice(0,sep.index).trim(); currentEdu.school = t.slice(sep.index+sep[0].length).trim(); }
+        else { currentEdu.degree = t; }
+        result.education.push(currentEdu);
+      } else if(currentEdu){
+        const yearM = t.match(/\d{4}/);
+        if(yearM && !currentEdu.year) currentEdu.year = yearM[0];
+        if(!currentEdu.school && !yearM) currentEdu.school = t;
+      }
+    }
+
+    if(section === 'certifications'){
+      result.certifications.push({ name: t, issuer:'', year:'' });
+    }
+    if(section === 'publications'){
+      result.publications.push({ title: t, venue:'', year:'', url:'', description:'' });
+    }
+  }
+
+  if(summaryLines.length) result.summary = summaryLines.join(' ');
+  // Deduplicate skills
+  Object.keys(result.skills).forEach(k => { result.skills[k] = [...new Set(result.skills[k])]; });
+
+  return result;
+}
+
+// ---- Upload handler ----
+const uploadZone = document.getElementById('upload-zone');
+const fileInput  = document.getElementById('resume-input');
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); if(e.dataTransfer.files[0]) handleUpload(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e => { if(e.target.files[0]) handleUpload(e.target.files[0]); e.target.value=''; });
+
+async function handleUpload(file){
+  if(!file.name.toLowerCase().endsWith('.docx')){
+    showUploadStatus('error', 'Please upload a .docx file. Open your resume in Word and save as .docx.');
+    return;
+  }
+  showUploadStatus('loading', '⏳ Parsing your resume…');
+  try {
+    const buf = await file.arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+    const xml = await zip.file('word/document.xml').async('string');
+    const parsed = parseDocx(xml);
+
+    // Merge into profile (don't overwrite non-empty fields the parser guessed wrong)
+    const merge = (cur, next) => (next && !cur) ? next : cur;
+    profile.name     = merge(profile.name, parsed.name);
+    profile.title    = merge(profile.title, parsed.title);
+    profile.email    = merge(profile.email, parsed.email) || auth.email || '';
+    profile.phone    = merge(profile.phone, parsed.phone);
+    profile.location = merge(profile.location, parsed.location);
+    profile.summary  = merge(profile.summary, parsed.summary);
+    if(parsed.linkedin) profile.links.linkedin = parsed.linkedin;
+    if(parsed.github)   profile.links.github   = parsed.github;
+
+    // Skills: merge arrays
+    Object.keys(parsed.skills).forEach(k => {
+      if(parsed.skills[k].length) profile.skills[k] = [...new Set([...profile.skills[k], ...parsed.skills[k]])];
+    });
+
+    if(parsed.experience.length) profile.experience = parsed.experience;
+    if(parsed.education.length)  profile.education  = parsed.education;
+    if(parsed.certifications.length) profile.certifications = parsed.certifications;
+    if(parsed.publications.length)   profile.publications   = parsed.publications;
+
+    renderViews();
+    loadEditForms();
+    showUploadStatus('success', `✓ Parsed "${file.name}" — review the sections below. Click Save All Changes when done.`);
+  } catch(err){
+    console.error(err);
+    showUploadStatus('error', 'Could not parse: ' + err.message + '. Fill in the fields manually below.');
+  }
+}
+
+// ---- Init ----
+(function init(){
+  // Pre-fill email from auth
+  if(auth.email) profile.email = auth.email;
+
+  // Load saved profile
+  const saved = store.getJSON(KEYS.PROFILE);
+  if(saved && saved.name){
+    profile = { ...profile, ...saved };
+    // Ensure sub-objects exist
+    profile.links = { ...profile.links, ...(saved.links||{}) };
+    profile.skills = { languages:[], frameworks:[], cloud:[], databases:[], tools:[], other:[], ...(saved.skills||{}) };
+    profile.experience = saved.experience || [];
+    profile.education  = saved.education  || [];
+    profile.certifications = saved.certifications || [];
+    profile.publications   = saved.publications   || [];
+    if(saved.updatedAt) document.getElementById('last-saved').textContent = 'Last saved: ' + new Date(saved.updatedAt).toLocaleString();
+  } else {
+    // Try to load from data/resume.json as starting point
+    fetch('data/resume.json').then(r=>r.json()).then(r=>{
+      profile.name = r.name||''; profile.title = r.title||''; profile.summary = r.summary||'';
+      profile.tagline = r.tagline||'';
+      profile.links = { linkedin:(r.links||{}).linkedin||'', github:(r.links||{}).github||'' };
+      const sk = r.skills||{};
+      profile.skills = {
+        languages: sk.languages||[], frameworks: sk.frameworks||[],
+        cloud: sk.cloud||[], databases: sk.databases||[],
+        tools: sk.tools||[], other: []
+      };
+      profile.experience = r.experience||[]; profile.education = r.education||[];
+      profile.certifications = []; profile.publications = r.projects ? r.projects.map(p=>({title:p.name||'',venue:'GitHub',year:'',url:p.link||'',description:p.description||''})) : [];
+      renderViews(); loadEditForms();
+    }).catch(()=>{});
+  }
+
+  renderViews();
+  loadEditForms();
+  updateKeyStatuses();
+})();
+</script>
 </body>
 </html>

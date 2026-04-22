@@ -9,12 +9,14 @@ export async function loadJSON(path) {
 }
 
 export async function loadResume() {
-  // Prefer user-edited profile from localStorage if it exists and has a name
+  // Prefer user-scoped profile from localStorage
   try {
-    const raw = localStorage.getItem('jh_profile');
-    if (raw) {
-      const p = JSON.parse(raw);
-      if (p && p.name) return p;
+    const auth = JSON.parse(localStorage.getItem('jh_auth') || '{}');
+    const email = (auth.email || '').toLowerCase().replace(/[^a-z0-9@.]/g, '_');
+    const key = email ? `jh__${email}__profile` : null;
+    if (key) {
+      const raw = localStorage.getItem(key);
+      if (raw) { const p = JSON.parse(raw); if (p && p.name) return p; }
     }
   } catch (e) { /* fall through */ }
   return loadJSON('data/resume.json');
