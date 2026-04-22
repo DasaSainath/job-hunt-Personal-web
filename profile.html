@@ -189,6 +189,12 @@
     .section-hint { margin: 0 0 12px; font-size: 0.82rem; color: var(--muted); }
     .section-empty { margin: 12px 20px; }
     .api-desc { margin: 0 0 16px; font-size: 0.86rem; color: var(--muted); }
+    .entry-pad { padding: 12px 20px; }
+    .entry-pad-sm { padding: 10px 20px; }
+    .exp-date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .sublabel { font-size: 0.78rem; font-weight: 600; color: var(--text); display: block; margin-bottom: 4px; }
+    .year-input { max-width: 120px; }
+    .pub-desc-txt { font-size: 0.83rem; color: var(--muted); margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -380,17 +386,35 @@
     </div>
   </div>
 
+  <!-- Projects -->
+  <div class="section-card" id="card-projects">
+    <div class="section-head">
+      <div class="section-dot"></div>
+      <h3>Projects</h3>
+      <button type="button" class="btn-edit-section" data-section="projects">Edit</button>
+    </div>
+    <div class="section-view" id="view-projects"><p class="muted small section-empty">None added yet.</p></div>
+    <div class="section-edit" id="edit-projects">
+      <div id="project-entries"></div>
+      <button type="button" class="btn-add-entry" id="add-project">+ Add Project</button>
+      <div class="edit-actions">
+        <button type="button" class="btn-save-section" data-section="projects">Save</button>
+        <button type="button" class="btn-cancel-section" data-section="projects">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Publications -->
   <div class="section-card" id="card-publications">
     <div class="section-head">
       <div class="section-dot"></div>
-      <h3>Publications &amp; Projects</h3>
+      <h3>Publications &amp; Research</h3>
       <button type="button" class="btn-edit-section" data-section="publications">Edit</button>
     </div>
     <div class="section-view" id="view-publications"><p class="muted small section-empty">None added yet.</p></div>
     <div class="section-edit" id="edit-publications">
       <div id="pub-entries"></div>
-      <button type="button" class="btn-add-entry" id="add-pub">+ Add Publication / Project</button>
+      <button type="button" class="btn-add-entry" id="add-pub">+ Add Publication</button>
       <div class="edit-actions">
         <button type="button" class="btn-save-section" data-section="publications">Save</button>
         <button type="button" class="btn-cancel-section" data-section="publications">Cancel</button>
@@ -453,7 +477,7 @@ let profile = {
   links:{ linkedin:'', github:'' },
   summary:'',
   skills:{ languages:[], frameworks:[], cloud:[], databases:[], tools:[], other:[] },
-  experience:[], education:[], certifications:[], publications:[],
+  experience:[], education:[], certifications:[], projects:[], publications:[],
   updatedAt: null
 };
 
@@ -495,36 +519,45 @@ function renderViews(){
   // Experience
   const vExp = document.getElementById('view-experience');
   vExp.innerHTML = (p.experience||[]).length ? (p.experience||[]).map(e=>`
-    <div class="exp-view-entry" style="padding:12px 20px;">
+    <div class="exp-view-entry entry-pad">
       <div class="entry-head-line">${escapeHtml(e.role||'')}${e.company?' — '+escapeHtml(e.company):''}</div>
-      <div class="entry-sub-line">${escapeHtml(e.location||'')} ${e.start||''} ${e.end?'→ '+e.end:''}</div>
+      <div class="entry-sub-line">${[e.location, e.start && e.end ? e.start+' → '+e.end : e.start||''].filter(Boolean).join(' · ')}</div>
       ${(e.bullets||[]).length ? `<ul class="bullet-list">${(e.bullets||[]).map(b=>`<li>${escapeHtml(b)}</li>`).join('')}</ul>` : ''}
-    </div>`).join('') : '<p class="muted small" style="margin:12px 20px;">No experience added yet.</p>';
+    </div>`).join('') : '<p class="muted small section-empty">No experience added yet.</p>';
 
   // Education
   const vEdu = document.getElementById('view-education');
   vEdu.innerHTML = (p.education||[]).length ? (p.education||[]).map(e=>`
-    <div class="edu-view-entry" style="padding:12px 20px;">
+    <div class="edu-view-entry entry-pad">
       <div class="entry-head-line">${escapeHtml(e.degree||'')}${e.school?' — '+escapeHtml(e.school):''}</div>
-      <div class="entry-sub-line">${escapeHtml(e.location||'')} ${e.year||''}</div>
-    </div>`).join('') : '<p class="muted small" style="margin:12px 20px;">No education added yet.</p>';
+      <div class="entry-sub-line">${[e.location, e.year].filter(Boolean).join(' · ')}</div>
+    </div>`).join('') : '<p class="muted small section-empty">No education added yet.</p>';
 
   // Certifications
   const vCert = document.getElementById('view-certifications');
   vCert.innerHTML = (p.certifications||[]).length ? (p.certifications||[]).map(c=>`
-    <div class="cert-view-entry" style="padding:10px 20px;">
+    <div class="cert-view-entry entry-pad-sm">
       <div class="entry-head-line">${escapeHtml(c.name||'')}</div>
-      <div class="entry-sub-line">${escapeHtml(c.issuer||'')} ${c.year||''}</div>
-    </div>`).join('') : '<p class="muted small" style="margin:12px 20px;">No certifications added yet.</p>';
+      <div class="entry-sub-line">${[c.issuer, c.year].filter(Boolean).join(' · ')}</div>
+    </div>`).join('') : '<p class="muted small section-empty">No certifications added yet.</p>';
+
+  // Projects
+  const vProj = document.getElementById('view-projects');
+  vProj.innerHTML = (p.projects||[]).length ? (p.projects||[]).map(proj=>`
+    <div class="cert-view-entry entry-pad-sm">
+      <div class="entry-head-line">${escapeHtml(proj.title||'')}${proj.tech?' <span class="entry-sub-line">· '+escapeHtml(proj.tech)+'</span>':''}</div>
+      ${proj.description ? `<div class="pub-desc-txt">${escapeHtml(proj.description)}</div>` : ''}
+      ${proj.url ? `<div class="entry-sub-line"><a href="${escapeHtml(proj.url)}" target="_blank">View project →</a></div>` : ''}
+    </div>`).join('') : '<p class="muted small section-empty">No projects added yet.</p>';
 
   // Publications
   const vPub = document.getElementById('view-publications');
   vPub.innerHTML = (p.publications||[]).length ? (p.publications||[]).map(pub=>`
-    <div class="cert-view-entry" style="padding:10px 20px;">
+    <div class="cert-view-entry entry-pad-sm">
       <div class="entry-head-line">${escapeHtml(pub.title||'')}</div>
-      <div class="entry-sub-line">${escapeHtml(pub.venue||'')} ${pub.year||''}${pub.url?' · <a href="'+escapeHtml(pub.url)+'" target="_blank">Link</a>':''}</div>
-      ${pub.description ? `<div style="font-size:0.83rem;color:var(--muted);margin-top:4px;">${escapeHtml(pub.description)}</div>` : ''}
-    </div>`).join('') : '<p class="muted small" style="margin:12px 20px;">No publications or projects added yet.</p>';
+      <div class="entry-sub-line">${[pub.venue, pub.year].filter(Boolean).join(' · ')}${pub.url?' · <a href="'+escapeHtml(pub.url)+'" target="_blank">Link</a>':''}</div>
+      ${pub.description ? `<div class="pub-desc-txt">${escapeHtml(pub.description)}</div>` : ''}
+    </div>`).join('') : '<p class="muted small section-empty">No publications added yet.</p>';
 
   updateHero(p.name, p.title);
 }
@@ -552,6 +585,7 @@ function loadEditForms(){
   renderExpEntries(p.experience||[]);
   renderEduEntries(p.education||[]);
   renderCertEntries(p.certifications||[]);
+  renderProjectEntries(p.projects||[]);
   renderPubEntries(p.publications||[]);
 }
 
@@ -591,6 +625,14 @@ function collectCertEntries(){
     year:el.querySelector('.cert-year')?.value.trim()||''
   })).filter(e=>e.name);
 }
+function collectProjectEntries(){
+  return [...document.querySelectorAll('.project-entry-card')].map(el=>({
+    title:el.querySelector('.proj-title')?.value.trim()||'',
+    tech:el.querySelector('.proj-tech')?.value.trim()||'',
+    url:el.querySelector('.proj-url')?.value.trim()||'',
+    description:el.querySelector('.proj-desc')?.value.trim()||''
+  })).filter(e=>e.title);
+}
 function collectPubEntries(){
   return [...document.querySelectorAll('.pub-entry-card')].map(el=>({
     title:el.querySelector('.pub-title')?.value.trim()||'',
@@ -611,9 +653,9 @@ function expEntryHTML(e={}){
     </div>
     <div class="form-row">
       <div class="form-field"><label>Location</label><input class="exp-loc" type="text" value="${escapeHtml(e.location||'')}" placeholder="City, State or Remote" /></div>
-      <div class="form-field" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <div><label style="font-size:0.78rem;font-weight:600;">Start</label><input class="exp-start" type="text" value="${escapeHtml(e.start||'')}" placeholder="2022" /></div>
-        <div><label style="font-size:0.78rem;font-weight:600;">End</label><input class="exp-end" type="text" value="${escapeHtml(e.end||'')}" placeholder="Present" /></div>
+      <div class="form-field exp-date-grid">
+        <div><span class="sublabel">Start</span><input class="exp-start" type="text" value="${escapeHtml(e.start||'')}" placeholder="Jan 2022" /></div>
+        <div><span class="sublabel">End</span><input class="exp-end" type="text" value="${escapeHtml(e.end||'')}" placeholder="Present" /></div>
       </div>
     </div>
     <div class="form-field"><label>Bullet Points (one per line)</label>
@@ -641,25 +683,37 @@ function certEntryHTML(c={}){
       <div class="form-field"><label>Certification Name</label><input class="cert-name" type="text" value="${escapeHtml(c.name||'')}" placeholder="AWS Solutions Architect" /></div>
       <div class="form-field"><label>Issuing Organization</label><input class="cert-issuer" type="text" value="${escapeHtml(c.issuer||'')}" placeholder="Amazon Web Services" /></div>
     </div>
-    <div class="form-field"><label>Year</label><input class="cert-year" type="text" value="${escapeHtml(c.year||'')}" placeholder="2024" style="max-width:120px;" /></div>
+    <div class="form-field"><label>Year</label><input class="cert-year year-input" type="text" value="${escapeHtml(c.year||'')}" placeholder="2024" /></div>
+  </div>`;
+}
+function projectEntryHTML(p={}){
+  return `<div class="entry-card project-entry-card">
+    <button type="button" class="btn-remove-entry">✕</button>
+    <div class="form-field"><label>Project Name</label><input class="proj-title" type="text" value="${escapeHtml(p.title||'')}" placeholder="e.g. Resume Matcher, Stock Predictor" /></div>
+    <div class="form-row">
+      <div class="form-field"><label>Technologies Used</label><input class="proj-tech" type="text" value="${escapeHtml(p.tech||'')}" placeholder="Python, TensorFlow, React, AWS…" /></div>
+      <div class="form-field"><label>URL / GitHub (optional)</label><input class="proj-url" type="url" value="${escapeHtml(p.url||'')}" placeholder="https://github.com/…" /></div>
+    </div>
+    <div class="form-field"><label>Description</label><textarea class="proj-desc" placeholder="What it does, your role, and impact.">${escapeHtml(p.description||'')}</textarea></div>
   </div>`;
 }
 function pubEntryHTML(p={}){
   return `<div class="entry-card pub-entry-card">
     <button type="button" class="btn-remove-entry">✕</button>
-    <div class="form-field"><label>Title</label><input class="pub-title" type="text" value="${escapeHtml(p.title||'')}" placeholder="Research paper or project name" /></div>
+    <div class="form-field"><label>Title</label><input class="pub-title" type="text" value="${escapeHtml(p.title||'')}" placeholder="Paper or article title" /></div>
     <div class="form-row">
-      <div class="form-field"><label>Venue / Journal / Platform</label><input class="pub-venue" type="text" value="${escapeHtml(p.venue||'')}" placeholder="IEEE, GitHub, Medium…" /></div>
-      <div class="form-field"><label>Year</label><input class="pub-year" type="text" value="${escapeHtml(p.year||'')}" placeholder="2024" /></div>
+      <div class="form-field"><label>Venue / Journal</label><input class="pub-venue" type="text" value="${escapeHtml(p.venue||'')}" placeholder="IEEE, ACM, Springer…" /></div>
+      <div class="form-field"><label>Year</label><input class="pub-year year-input" type="text" value="${escapeHtml(p.year||'')}" placeholder="2024" /></div>
     </div>
     <div class="form-field"><label>URL (optional)</label><input class="pub-url" type="url" value="${escapeHtml(p.url||'')}" placeholder="https://…" /></div>
-    <div class="form-field"><label>Short Description</label><textarea class="pub-desc" placeholder="One sentence about this work.">${escapeHtml(p.description||'')}</textarea></div>
+    <div class="form-field"><label>Short Description</label><textarea class="pub-desc" placeholder="One sentence about this publication.">${escapeHtml(p.description||'')}</textarea></div>
   </div>`;
 }
 
 function renderExpEntries(arr){ document.getElementById('exp-entries').innerHTML = arr.map(expEntryHTML).join(''); wireRemove(); }
 function renderEduEntries(arr){ document.getElementById('edu-entries').innerHTML = arr.map(eduEntryHTML).join(''); wireRemove(); }
 function renderCertEntries(arr){ document.getElementById('cert-entries').innerHTML = arr.map(certEntryHTML).join(''); wireRemove(); }
+function renderProjectEntries(arr){ document.getElementById('project-entries').innerHTML = arr.map(projectEntryHTML).join(''); wireRemove(); }
 function renderPubEntries(arr){ document.getElementById('pub-entries').innerHTML = arr.map(pubEntryHTML).join(''); wireRemove(); }
 
 function wireRemove(){
@@ -671,6 +725,7 @@ function wireRemove(){
 document.getElementById('add-exp').addEventListener('click', () => { document.getElementById('exp-entries').insertAdjacentHTML('beforeend', expEntryHTML()); wireRemove(); });
 document.getElementById('add-edu').addEventListener('click', () => { document.getElementById('edu-entries').insertAdjacentHTML('beforeend', eduEntryHTML()); wireRemove(); });
 document.getElementById('add-cert').addEventListener('click', () => { document.getElementById('cert-entries').insertAdjacentHTML('beforeend', certEntryHTML()); wireRemove(); });
+document.getElementById('add-project').addEventListener('click', () => { document.getElementById('project-entries').insertAdjacentHTML('beforeend', projectEntryHTML()); wireRemove(); });
 document.getElementById('add-pub').addEventListener('click', () => { document.getElementById('pub-entries').insertAdjacentHTML('beforeend', pubEntryHTML()); wireRemove(); });
 
 // ---- Edit / Save / Cancel section toggle ----
@@ -712,6 +767,7 @@ function applySection(sec){
   if(sec === 'experience'){  profile.experience = collectExpEntries(); }
   if(sec === 'education'){   profile.education = collectEduEntries(); }
   if(sec === 'certifications'){ profile.certifications = collectCertEntries(); }
+  if(sec === 'projects'){     profile.projects = collectProjectEntries(); }
   if(sec === 'publications'){ profile.publications = collectPubEntries(); }
 }
 
@@ -760,7 +816,7 @@ function saveAll(){
 
 document.getElementById('save-all-btn').addEventListener('click', () => {
   // Collect all sections
-  ['basic','skills','experience','education','certifications','publications'].forEach(applySection);
+  ['basic','skills','experience','education','certifications','projects','publications'].forEach(applySection);
   renderViews(); saveAll();
 });
 
@@ -772,145 +828,251 @@ function showUploadStatus(type, msg){
 }
 
 function parseDocx(xml){
-  // Normalise paragraph list
+  // Extract paragraphs with formatting metadata
   const paragraphs = [...xml.matchAll(/<w:p[ >][\s\S]*?<\/w:p>/g)].map(m => {
     const raw = m[0];
     const text = [...raw.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(t=>t[1]).join('').trim();
-    const bold = /<w:b[ \/>]|<w:b>/.test(raw);
-    const caps = text.length > 1 && text.length < 70 && text === text.toUpperCase() && /[A-Z]/.test(text);
-    const headingStyle = /<w:pStyle w:val="[^"]*[Hh]eading/.test(raw);
+    const bold = /<w:b[ \/>]|<w:b>/.test(raw) && !/<w:b w:val="0"/.test(raw);
+    const isAllCaps = text.length > 1 && text === text.toUpperCase() && /[A-Z]/.test(text);
+    const headingStyle = /<w:pStyle w:val="[^"]*(?:[Hh]eading|Title|Subtitle)/.test(raw);
     const isBullet = /<w:numPr/.test(raw);
-    return { text, bold, caps, headingStyle, isBullet };
+    const isItalic = /<w:i[ \/>]|<w:i>/.test(raw) && !/<w:i w:val="0"/.test(raw);
+    return { text, bold, isAllCaps, headingStyle, isBullet, isItalic };
   }).filter(p => p.text);
 
   const result = {
     name:'', title:'', summary:'', email:'', phone:'', location:'', linkedin:'', github:'',
     skills:{ languages:[], frameworks:[], cloud:[], databases:[], tools:[], other:[] },
-    experience:[], education:[], certifications:[], publications:[]
+    experience:[], education:[], certifications:[], projects:[], publications:[]
   };
 
+  // Regex helpers
+  const emailRe    = /[\w.+-]+@[\w-]+\.[a-z]{2,}/i;
+  const phoneRe    = /(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}/;
+  const linkedinRe = /linkedin\.com\/in\/[\w-]+/i;
+  const githubRe   = /github\.com\/[\w-]+/i;
+  const dateRangeRe = /(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+)?\d{4}\s*[-–—to]+\s*(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+)?(?:\d{4}|present|current|now)/i;
+  const yearOnlyRe  = /\b(19|20)\d{2}\b/;
+
+  // Section heading keywords — PROJECTS and PUBLICATIONS are now separate
+  const sectionMap = {
+    summary:        /^(summary|professional summary|objective|profile|about me|overview)/i,
+    skills:         /^(skills|technical skills|core competencies|technologies|tools|proficiencies|expertise)/i,
+    experience:     /^(experience|work experience|professional experience|employment history|career history|work history)/i,
+    education:      /^(education|academic background|academic qualifications|degree|university|college)/i,
+    certifications: /^(certif|license|credential|accreditation|awards?|honors?|achievements?)/i,
+    projects:       /^(projects?|side projects?|personal projects?|open.?source|portfolio|github projects?)/i,
+    publications:   /^(publications?|research papers?|papers?|articles?|journals?|conference|proceedings)/i,
+  };
+
+  // A line is a section heading if it's a styled heading, or bold+caps (short), or all-caps (short)
+  // BUT: must match a known section keyword, OR be very short and bold
+  const isKnownSection = t => Object.values(sectionMap).some(re => re.test(t));
+  const isHeading = p =>
+    p.headingStyle ||
+    (p.bold && p.isAllCaps && p.text.length < 60) ||
+    (p.isAllCaps && p.text.length < 50 && isKnownSection(p.text));
+
   let section = 'header';
+  let headerDone = false;
+  let headerLineCount = 0;
+  let summaryLines = [];
   let currentExp = null;
   let currentEdu = null;
 
-  const isHeading = p => p.headingStyle || (p.bold && p.caps) || (p.caps && p.text.length < 50);
-
-  const sectionMap = {
-    summary:   /^(summary|professional summary|objective|profile|about me)/i,
-    skills:    /^(skills|technical skills|core competencies|technologies|tools|proficiencies)/i,
-    experience:/^(experience|work experience|professional experience|employment|career)/i,
-    education: /^(education|academic|degree|university|college)/i,
-    certifications:/^(certif|license|credential|accreditation)/i,
-    publications:  /^(publication|research|project|portfolio|paper)/i,
-  };
-
-  // Email / phone / linkedin regex
-  const emailRe = /[\w.+-]+@[\w-]+\.[a-z]{2,}/i;
-  const phoneRe = /(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}/;
-  const linkedinRe = /linkedin\.com\/in\/[\w-]+/i;
-  const githubRe   = /github\.com\/[\w-]+/i;
-
-  let headerDone = false;
-  let summaryLines = [];
-
-  for(let i=0; i<paragraphs.length; i++){
+  for(let i = 0; i < paragraphs.length; i++){
     const p = paragraphs[i];
     const t = p.text;
 
-    // Extract contact info from any paragraph
-    const emailM = t.match(emailRe);    if(emailM && !result.email) result.email = emailM[0];
-    const phoneM = t.match(phoneRe);    if(phoneM && !result.phone) result.phone = phoneM[0];
-    const liM = t.match(linkedinRe);    if(liM && !result.linkedin) result.linkedin = 'https://' + liM[0];
-    const ghM = t.match(githubRe);      if(ghM && !result.github)   result.github   = 'https://' + ghM[0];
+    // Always extract contact info from any line
+    const emailM = t.match(emailRe);   if(emailM && !result.email)    result.email    = emailM[0];
+    const phoneM = t.match(phoneRe);   if(phoneM && !result.phone)    result.phone    = phoneM[0];
+    const liM    = t.match(linkedinRe);if(liM    && !result.linkedin)  result.linkedin = 'https://' + liM[0];
+    const ghM    = t.match(githubRe);  if(ghM    && !result.github)    result.github   = 'https://' + ghM[0];
+    const isContact = !!(emailM || phoneM || liM || ghM);
 
+    // ---- Section boundary detection ----
     if(isHeading(p)){
       headerDone = true;
       let matched = false;
       for(const [sec, re] of Object.entries(sectionMap)){
         if(re.test(t)){ section = sec; matched = true; currentExp = null; currentEdu = null; break; }
       }
-      if(!matched && section !== 'header') section = 'other';
+      if(!matched){ section = 'other'; }
       continue;
     }
 
+    // ---- Header block (name, title, contact) ----
     if(!headerDone){
-      // First non-heading lines are name/title/contact
-      if(!result.name && !emailM && !phoneM && !liM && !ghM && t.length < 60 && !t.includes(',')) result.name = t;
-      else if(!result.title && !result.name && t.length < 60) result.title = t;
-      else if(result.name && !result.title && t.length < 80 && !emailM && !phoneM) result.title = t;
+      headerLineCount++;
+      if(!isContact){
+        if(!result.name && t.length < 70 && !/[,;|]/.test(t) && !yearOnlyRe.test(t))
+          result.name = t;
+        else if(result.name && !result.title && t.length < 100 && !yearOnlyRe.test(t))
+          result.title = t;
+      }
+      // After ~8 header lines, assume we've left the header
+      if(headerLineCount > 8) headerDone = true;
       continue;
     }
 
-    if(section === 'summary') summaryLines.push(t);
-
-    if(section === 'skills'){
-      // "Category: item1, item2" or just "item1, item2, item3"
-      const colon = t.indexOf(':');
-      if(colon > 0 && colon < 35){
-        const cat = t.slice(0,colon).toLowerCase();
-        const items = t.slice(colon+1).split(/[,;|]/).map(x=>x.trim()).filter(Boolean);
-        if(/lang|programm/i.test(cat)) result.skills.languages.push(...items);
-        else if(/frame|librar/i.test(cat)) result.skills.frameworks.push(...items);
-        else if(/cloud|devops|infra/i.test(cat)) result.skills.cloud.push(...items);
-        else if(/data|db|sql/i.test(cat)) result.skills.databases.push(...items);
-        else if(/tool|platform/i.test(cat)) result.skills.tools.push(...items);
-        else result.skills.other.push(...items);
-      } else if(t.includes(',')){
-        result.skills.other.push(...t.split(',').map(x=>x.trim()).filter(Boolean));
-      }
+    // ---- Summary ----
+    if(section === 'summary'){
+      summaryLines.push(t);
+      continue;
     }
 
+    // ---- Skills ----
+    if(section === 'skills'){
+      const colon = t.indexOf(':');
+      if(colon > 0 && colon < 40){
+        const cat = t.slice(0, colon).toLowerCase().trim();
+        const items = t.slice(colon+1).split(/[,;|•]/).map(x=>x.trim()).filter(Boolean);
+        if(/lang|programm|coding/i.test(cat))          result.skills.languages.push(...items);
+        else if(/frame|librar|sdk/i.test(cat))          result.skills.frameworks.push(...items);
+        else if(/cloud|devops|infra|ci|cd|pipeline/i.test(cat)) result.skills.cloud.push(...items);
+        else if(/data|db|sql|database|storage/i.test(cat)) result.skills.databases.push(...items);
+        else if(/tool|platform|software|ide|editor/i.test(cat)) result.skills.tools.push(...items);
+        else result.skills.other.push(...items);
+      } else if(t.includes(',') || t.includes('|')){
+        // Plain comma/pipe-separated skill list — put into other if category unclear
+        const items = t.split(/[,|]/).map(x=>x.trim()).filter(Boolean);
+        result.skills.other.push(...items);
+      } else if(t.length < 40 && !yearOnlyRe.test(t)){
+        // Single skill per line
+        result.skills.other.push(t);
+      }
+      continue;
+    }
+
+    // ---- Experience ----
     if(section === 'experience'){
-      // New entry: bold line that isn't a bullet and contains a company/role indicator
-      const looksLikeEntry = (p.bold || p.caps) && !p.isBullet && t.length < 120;
-      if(looksLikeEntry){
-        // Check if it looks like a date range → part of previous entry header
-        const hasDate = /\d{4}/.test(t);
-        if(currentExp && hasDate && !currentExp.end){
-          // It's a date/period line for current entry
-          const yearMatch = t.match(/(\d{4})\s*[-–—to]*\s*(\d{4}|present|current)?/i);
-          if(yearMatch){ currentExp.start = yearMatch[1]; currentExp.end = yearMatch[2] || 'Present'; }
-          currentExp.location = t.replace(/\d{4}[-–—to\s]+(\d{4}|present|current)?/i,'').trim();
+      const isDateLine = dateRangeRe.test(t);
+      const isBulletLine = p.isBullet || /^[•·▪►\-\*]\s/.test(t);
+
+      if(isBulletLine){
+        if(currentExp) currentExp.bullets.push(t.replace(/^[•·▪►\-\*]\s*/,''));
+        continue;
+      }
+
+      if(isDateLine){
+        // Attach date range to most recent exp entry
+        if(currentExp && !currentExp.start){
+          const dateStr = t.match(dateRangeRe)?.[0] || '';
+          const parts = dateStr.split(/[-–—]|(?:\bto\b)/i).map(s=>s.trim());
+          currentExp.start = parts[0] || '';
+          currentExp.end   = parts[1] || 'Present';
+          // Remaining text (non-date) might be location
+          const loc = t.replace(dateRangeRe,'').replace(/[,|]/g,' ').trim();
+          if(loc && !currentExp.location) currentExp.location = loc;
+        }
+        continue;
+      }
+
+      // Bold/heading-style lines that aren't dates/bullets → new entry or company
+      if((p.bold || p.headingStyle || p.isAllCaps) && !isBulletLine && t.length < 150){
+        // Does the line contain a role/company separator?
+        const sep = t.match(/\s+(?:at|@)\s+|\s*[|｜]\s*|\s*[–—]\s*/);
+        if(sep){
+          // "Role at Company" or "Role | Company" → new entry
+          currentExp = { role: t.slice(0, sep.index).trim(), company: t.slice(sep.index + sep[0].length).trim(), location:'', start:'', end:'', bullets:[] };
+          result.experience.push(currentExp);
+        } else if(currentExp && !currentExp.company && !currentExp.bullets.length){
+          // We already have a role, this is likely the company name on next line
+          currentExp.company = t;
         } else {
-          currentExp = { role:'', company:'', location:'', start:'', end:'', bullets:[] };
-          // Heuristic: "Role at Company" or "Role | Company" or "Role — Company"
-          const sep = t.match(/\s+(at|@|\||–|—|-)\s+/i);
-          if(sep){ currentExp.role = t.slice(0, sep.index).trim(); currentExp.company = t.slice(sep.index + sep[0].length).trim(); }
-          else { currentExp.role = t; }
+          // New role entry (company may follow on next line)
+          currentExp = { role: t, company:'', location:'', start:'', end:'', bullets:[] };
           result.experience.push(currentExp);
         }
-      } else if(currentExp && (p.isBullet || t.startsWith('•') || t.startsWith('-'))){
-        currentExp.bullets.push(t.replace(/^[•\-\*]\s*/,''));
-      } else if(currentExp && !currentExp.company && !p.isBullet && t.length < 80){
-        currentExp.company = t;
+        continue;
       }
+
+      // Plain non-bold line — might be company, location, or date on its own line
+      if(currentExp){
+        if(!currentExp.company && t.length < 80 && !isBulletLine) currentExp.company = t;
+        else if(currentExp.company && !currentExp.location && t.length < 60) currentExp.location = t;
+      }
+      continue;
     }
 
+    // ---- Education ----
     if(section === 'education'){
-      if((p.bold || p.caps) && !p.isBullet){
-        currentEdu = { degree:'', school:'', year:'', location:'' };
-        const sep = t.match(/\s+(at|@|\||–|—|-)\s+/i);
-        if(sep){ currentEdu.degree = t.slice(0,sep.index).trim(); currentEdu.school = t.slice(sep.index+sep[0].length).trim(); }
-        else { currentEdu.degree = t; }
+      const isDateLine = dateRangeRe.test(t) || (yearOnlyRe.test(t) && t.length < 30);
+      const isBulletLine = p.isBullet || /^[•·▪►\-\*]\s/.test(t);
+
+      if(isBulletLine) continue; // skip bullets in education
+
+      if((p.bold || p.headingStyle || p.isAllCaps) && !isBulletLine){
+        const sep = t.match(/\s+(?:at|@)\s+|\s*[|｜]\s*|\s*[–—]\s*|\s*,\s*/);
+        if(sep){
+          currentEdu = { degree: t.slice(0, sep.index).trim(), school: t.slice(sep.index + sep[0].length).trim(), year:'', location:'' };
+        } else {
+          currentEdu = { degree: t, school:'', year:'', location:'' };
+        }
         result.education.push(currentEdu);
       } else if(currentEdu){
-        const yearM = t.match(/\d{4}/);
-        if(yearM && !currentEdu.year) currentEdu.year = yearM[0];
-        if(!currentEdu.school && !yearM) currentEdu.school = t;
+        if(isDateLine){
+          const ym = t.match(yearOnlyRe);
+          if(ym && !currentEdu.year) currentEdu.year = ym[0];
+        } else if(!currentEdu.school && t.length < 80){
+          currentEdu.school = t;
+        } else if(currentEdu.school && !currentEdu.year){
+          const ym = t.match(yearOnlyRe);
+          if(ym) currentEdu.year = ym[0];
+        }
       }
+      continue;
     }
 
+    // ---- Certifications ----
     if(section === 'certifications'){
-      result.certifications.push({ name: t, issuer:'', year:'' });
+      if(!p.isBullet || t.length > 5){
+        // Try to parse "Name — Issuer — Year" or "Name, Issuer, Year"
+        const yr = t.match(/\b(20\d{2}|19\d{2})\b/);
+        const nameOnly = t.replace(/\b(20\d{2}|19\d{2})\b/, '').replace(/[-–,|]+$/, '').trim();
+        result.certifications.push({ name: nameOnly || t, issuer:'', year: yr?yr[0]:'' });
+      }
+      continue;
     }
+
+    // ---- Projects (separate from publications) ----
+    if(section === 'projects'){
+      // Each bold/heading line is a project title; subsequent plain lines are description
+      if((p.bold || p.headingStyle) && t.length > 3){
+        result.projects.push({ title: t, tech:'', url:'', description:'' });
+      } else if(result.projects.length > 0){
+        const last = result.projects[result.projects.length - 1];
+        if(!last.description) last.description = t;
+        else if(githubRe.test(t) || /https?:\/\//.test(t)) last.url = t.match(/https?:\/\/[^\s]+/)?.[0] || '';
+      }
+      continue;
+    }
+
+    // ---- Publications ----
     if(section === 'publications'){
-      result.publications.push({ title: t, venue:'', year:'', url:'', description:'' });
+      if((p.bold || p.headingStyle) && t.length > 3){
+        result.publications.push({ title: t, venue:'', year:'', url:'', description:'' });
+      } else if(result.publications.length > 0){
+        const last = result.publications[result.publications.length - 1];
+        const yr = t.match(/\b(20\d{2}|19\d{2})\b/);
+        if(yr && !last.year){ last.year = yr[0]; }
+        else if(!last.description) last.description = t;
+      }
+      continue;
     }
   }
 
   if(summaryLines.length) result.summary = summaryLines.join(' ');
-  // Deduplicate skills
-  Object.keys(result.skills).forEach(k => { result.skills[k] = [...new Set(result.skills[k])]; });
+
+  // Deduplicate skills arrays
+  Object.keys(result.skills).forEach(k => {
+    result.skills[k] = [...new Set(result.skills[k].filter(Boolean))];
+  });
+
+  // Filter out empty experience/education entries
+  result.experience = result.experience.filter(e => e.role || e.company);
+  result.education  = result.education.filter(e => e.degree || e.school);
 
   return result;
 }
@@ -952,10 +1114,11 @@ async function handleUpload(file){
       if(parsed.skills[k].length) profile.skills[k] = [...new Set([...profile.skills[k], ...parsed.skills[k]])];
     });
 
-    if(parsed.experience.length) profile.experience = parsed.experience;
-    if(parsed.education.length)  profile.education  = parsed.education;
+    if(parsed.experience.length)    profile.experience    = parsed.experience;
+    if(parsed.education.length)     profile.education     = parsed.education;
     if(parsed.certifications.length) profile.certifications = parsed.certifications;
-    if(parsed.publications.length)   profile.publications   = parsed.publications;
+    if(parsed.projects.length)      profile.projects      = parsed.projects;
+    if(parsed.publications.length)  profile.publications  = parsed.publications;
 
     renderViews();
     loadEditForms();
@@ -971,35 +1134,30 @@ async function handleUpload(file){
   // Pre-fill email from auth
   if(auth.email) profile.email = auth.email;
 
-  // Load saved profile
+  // Load saved profile for this user only — new users start with a blank profile
   const saved = store.getJSON(KEYS.PROFILE);
-  if(saved && saved.name){
-    profile = { ...profile, ...saved };
-    // Ensure sub-objects exist
-    profile.links = { ...profile.links, ...(saved.links||{}) };
+  if(saved && (saved.name || saved.email)){
+    profile = {
+      name:'', title:'', email: auth.email||'', phone:'', location:'', website:'', tagline:'',
+      links:{ linkedin:'', github:'' },
+      summary:'',
+      skills:{ languages:[], frameworks:[], cloud:[], databases:[], tools:[], other:[] },
+      experience:[], education:[], certifications:[], projects:[], publications:[],
+      updatedAt: null,
+      ...saved
+    };
+    // Ensure sub-objects are properly merged
+    profile.email  = saved.email  || auth.email || '';
+    profile.links  = { linkedin:'', github:'', ...(saved.links||{}) };
     profile.skills = { languages:[], frameworks:[], cloud:[], databases:[], tools:[], other:[], ...(saved.skills||{}) };
-    profile.experience = saved.experience || [];
-    profile.education  = saved.education  || [];
-    profile.certifications = saved.certifications || [];
-    profile.publications   = saved.publications   || [];
+    profile.experience    = saved.experience    || [];
+    profile.education     = saved.education     || [];
+    profile.certifications= saved.certifications|| [];
+    profile.projects      = saved.projects      || [];
+    profile.publications  = saved.publications  || [];
     if(saved.updatedAt) document.getElementById('last-saved').textContent = 'Last saved: ' + new Date(saved.updatedAt).toLocaleString();
-  } else {
-    // Try to load from data/resume.json as starting point
-    fetch('data/resume.json').then(r=>r.json()).then(r=>{
-      profile.name = r.name||''; profile.title = r.title||''; profile.summary = r.summary||'';
-      profile.tagline = r.tagline||'';
-      profile.links = { linkedin:(r.links||{}).linkedin||'', github:(r.links||{}).github||'' };
-      const sk = r.skills||{};
-      profile.skills = {
-        languages: sk.languages||[], frameworks: sk.frameworks||[],
-        cloud: sk.cloud||[], databases: sk.databases||[],
-        tools: sk.tools||[], other: []
-      };
-      profile.experience = r.experience||[]; profile.education = r.education||[];
-      profile.certifications = []; profile.publications = r.projects ? r.projects.map(p=>({title:p.name||'',venue:'GitHub',year:'',url:p.link||'',description:p.description||''})) : [];
-      renderViews(); loadEditForms();
-    }).catch(()=>{});
   }
+  // No fallback to data/resume.json — new users see a blank form and upload their own resume
 
   renderViews();
   loadEditForms();

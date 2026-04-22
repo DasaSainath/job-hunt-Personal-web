@@ -198,8 +198,9 @@
 
     <span class="filter-label">Posted:</span>
     <div class="time-chips">
-      <button type="button" class="time-chip active" data-hours="72">72h</button>
-      <button type="button" class="time-chip" data-hours="168">7d</button>
+      <button type="button" class="time-chip" data-hours="24">24h</button>
+      <button type="button" class="time-chip" data-hours="72">72h</button>
+      <button type="button" class="time-chip active" data-hours="168">7d</button>
       <button type="button" class="time-chip" data-hours="720">30d</button>
       <button type="button" class="time-chip" data-hours="0">All</button>
     </div>
@@ -301,7 +302,7 @@ markActiveNav();
 
 const PAGE_SIZE = 30;
 const state = { jobs: [], cachedJobs: [], filtered: [] };
-let resumeText = '', skills = [], activeHours = 72, currentPage = 1;
+let resumeText = '', skills = [], activeHours = 168, currentPage = 1;
 
 // ---- API key check ----
 const rapidKey = store.get(KEYS.RAPID_API_KEY);
@@ -318,13 +319,22 @@ async function fetchFromJSearch(query, location) {
   const key = store.get(KEYS.RAPID_API_KEY);
   if (!key || !query) return [];
   const loc = location || 'United States';
-  const params = new URLSearchParams({ query: `${query} in ${loc}`, num_pages: '3', date_posted: 'week' });
+  const params = new URLSearchParams({ query: `${query} in ${loc}`, num_pages: '3', date_posted: 'month' });
   try {
     const r = await fetch(`https://jsearch.p.rapidapi.com/search?${params}`, {
       headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' }
     });
-    if (!r.ok) { console.warn('JSearch HTTP', r.status); return []; }
+    if (!r.ok) {
+      const hint = r.status === 429 ? '— free plan rate limit hit, wait a minute then retry'
+                 : r.status === 403 ? '— API key invalid, check Profile → API Settings'
+                 : `(HTTP ${r.status})`;
+      setStatus(false, `⚠️ JSearch error ${hint}. Showing free sources only.`);
+      return [];
+    }
     const d = await r.json();
+    if (!d.data || d.data.length === 0) {
+      setStatus(false, `JSearch returned 0 results for "${query}" in ${loc}. Try a broader title or location.`);
+    }
     return (d.data || []).map(j => ({
       id: 'js-' + j.job_id,
       title: j.job_title || '',
@@ -338,7 +348,10 @@ async function fetchFromJSearch(query, location) {
       tags: j.job_required_skills || [],
       _live: true, _jsearch: true
     }));
-  } catch (e) { console.warn('JSearch error:', e); return []; }
+  } catch (e) {
+    setStatus(false, `⚠️ JSearch request failed: ${e.message}. Check your internet connection.`);
+    return [];
+  }
 }
 
 // ---- Remotive (free fallback) ----
@@ -516,8 +529,8 @@ function render() {
     const hasKey = !!store.get(KEYS.RAPID_API_KEY);
     tbody.innerHTML = `<tr><td colspan="7"><div class="table-empty">
       <strong>No jobs found</strong>
-      ${!hasKey ? `Add your <a href="profile.html#api-settings">RapidAPI key in Profile</a> to search LinkedIn, Indeed &amp; Glassdoor.<br/>` : ''}
-      Try changing your search term, location, or expanding the date range.
+      ${!hasKey ? `<a href="profile.html#api-settings">Add your RapidAPI key in Profile</a> to search LinkedIn, Indeed &amp; Glassdoor.<br/>` : ''}
+      Try: switch the Posted filter to <strong>30d</strong> or <strong>All</strong>, broaden your search term, or change the location.
     </div></td></tr>`;
     document.getElementById('pag-bar').classList.add('pagination-hidden');
     return;
@@ -622,6 +635,13 @@ async function runSearch() {
 
   document.getElementById('min-score').value = '0';
   currentPage = 1;
+
+  // Auto-switch to 7d so live JSearch/Remotive results aren't filtered out
+  if (activeHours < 168) {
+    activeHours = 168;
+    document.querySelectorAll('.time-chip').forEach(b => b.classList.toggle('active', b.dataset.hours === '168'));
+  }
+
   setStatus(true, `Searching for "${query}" in ${location}…`);
 
   const hasKey = !!store.get(KEYS.RAPID_API_KEY);
