@@ -827,6 +827,21 @@ function showUploadStatus(type, msg){
   el.textContent = msg;
 }
 
+// Helper: extract job title from a bold line that has tech/location appended
+function extractRole(t){
+  // "Title (Full Time)" or "Title (Full time)" — most reliable split point
+  const ftm = t.match(/^(.*?\((?:Full|Part)\s*[Tt]ime\))/);
+  if(ftm) return ftm[1].trim();
+  // "Title | Tech" — pipe separator
+  const pipeIdx = t.indexOf('|');
+  if(pipeIdx > 0) return t.slice(0, pipeIdx).trim();
+  // "Title — Tech"
+  const dashM = t.match(/^(.{5,60}?)\s+[—–]\s+/);
+  if(dashM) return dashM[1].trim();
+  // Fallback: first 60 chars
+  return t.length > 80 ? t.slice(0, 60).trim() : t.trim();
+}
+
 function parseDocx(xml){
   // Extract paragraphs with formatting metadata
   const paragraphs = [...xml.matchAll(/<w:p[ >][\s\S]*?<\/w:p>/g)].map(m => {
@@ -834,10 +849,10 @@ function parseDocx(xml){
     const text = [...raw.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(t=>t[1]).join('').trim();
     const bold = /<w:b[ \/>]|<w:b>/.test(raw) && !/<w:b w:val="0"/.test(raw);
     const isAllCaps = text.length > 1 && text === text.toUpperCase() && /[A-Z]/.test(text);
-    const headingStyle = /<w:pStyle w:val="[^"]*(?:[Hh]eading|Title|Subtitle)/.test(raw);
+    // headingStyle: Word "Heading 1/2/3" styles, often used for company names / school names in resumes
+    const headingStyle = /<w:pStyle w:val="[^"]*(?:[Hh]eading|Title)/.test(raw);
     const isBullet = /<w:numPr/.test(raw);
-    const isItalic = /<w:i[ \/>]|<w:i>/.test(raw) && !/<w:i w:val="0"/.test(raw);
-    return { text, bold, isAllCaps, headingStyle, isBullet, isItalic };
+    return { text, bold, isAllCaps, headingStyle, isBullet };
   }).filter(p => p.text);
 
   const result = {
@@ -846,32 +861,32 @@ function parseDocx(xml){
     experience:[], education:[], certifications:[], projects:[], publications:[]
   };
 
-  // Regex helpers
   const emailRe    = /[\w.+-]+@[\w-]+\.[a-z]{2,}/i;
   const phoneRe    = /(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}/;
   const linkedinRe = /linkedin\.com\/in\/[\w-]+/i;
   const githubRe   = /github\.com\/[\w-]+/i;
-  const dateRangeRe = /(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+)?\d{4}\s*[-–—to]+\s*(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+)?(?:\d{4}|present|current|now)/i;
-  const yearOnlyRe  = /\b(19|20)\d{2}\b/;
+  const urlRe      = /https?:\/\/[^\s)>]+/i;
+  // Date range: "Jan 2024 - Present", "Apr 2022 – Jul 2023", "June 2016 – May 2019"
+  const dateRangeRe = /(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*)?\d{4}\s*[-–—]\s*(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*)?(?:\d{4}|present|current|now)/i;
+  const yearRe      = /\b((?:19|20)\d{2})\b/;
 
-  // Section heading keywords — PROJECTS and PUBLICATIONS are now separate
   const sectionMap = {
-    summary:        /^(summary|professional summary|objective|profile|about me|overview)/i,
+    summary:        /^(summary|professional summary|objective|profile|about|overview)/i,
     skills:         /^(skills|technical skills|core competencies|technologies|tools|proficiencies|expertise)/i,
-    experience:     /^(experience|work experience|professional experience|employment history|career history|work history)/i,
-    education:      /^(education|academic background|academic qualifications|degree|university|college)/i,
+    experience:     /^(experience|work experience|professional experience|employment|career)/i,
+    education:      /^(education|academic|degree|university|college)/i,
     certifications: /^(certif|license|credential|accreditation|awards?|honors?|achievements?)/i,
-    projects:       /^(projects?|side projects?|personal projects?|open.?source|portfolio|github projects?)/i,
-    publications:   /^(publications?|research papers?|papers?|articles?|journals?|conference|proceedings)/i,
+    projects:       /^(projects?|side projects?|personal projects?|open.?source|portfolio)/i,
+    publications:   /^(publications?|research papers?|papers?|articles?|journals?|conference)/i,
   };
+  const isKnownSection = t => Object.values(sectionMap).some(re => re.test(t.trim()));
 
-  // A line is a section heading if it's a styled heading, or bold+caps (short), or all-caps (short)
-  // BUT: must match a known section keyword, OR be very short and bold
-  const isKnownSection = t => Object.values(sectionMap).some(re => re.test(t));
-  const isHeading = p =>
-    p.headingStyle ||
-    (p.bold && p.isAllCaps && p.text.length < 60) ||
-    (p.isAllCaps && p.text.length < 50 && isKnownSection(p.text));
+  // A paragraph is a SECTION HEADER only if it matches a known section keyword.
+  // We do NOT use headingStyle alone — in many resumes, company names and school names
+  // also use Word heading styles. Requiring the keyword prevents them being treated as section breaks.
+  const isSectionHeader = p =>
+    isKnownSection(p.text) &&
+    (p.isAllCaps || p.headingStyle || p.bold);
 
   let section = 'header';
   let headerDone = false;
@@ -883,180 +898,212 @@ function parseDocx(xml){
   for(let i = 0; i < paragraphs.length; i++){
     const p = paragraphs[i];
     const t = p.text;
+    const isBulletLine = p.isBullet || /^[•·▪►]\s/.test(t);
+    const hasDateRange = dateRangeRe.test(t);
 
-    // Always extract contact info from any line
-    const emailM = t.match(emailRe);   if(emailM && !result.email)    result.email    = emailM[0];
-    const phoneM = t.match(phoneRe);   if(phoneM && !result.phone)    result.phone    = phoneM[0];
-    const liM    = t.match(linkedinRe);if(liM    && !result.linkedin)  result.linkedin = 'https://' + liM[0];
-    const ghM    = t.match(githubRe);  if(ghM    && !result.github)    result.github   = 'https://' + ghM[0];
-    const isContact = !!(emailM || phoneM || liM || ghM);
+    // Always extract contact info regardless of section
+    const emailM = t.match(emailRe);   if(emailM && !result.email)   result.email   = emailM[0];
+    const phoneM = t.match(phoneRe);   if(phoneM && !result.phone)   result.phone   = phoneM[0];
+    const liM    = t.match(linkedinRe);if(liM && !result.linkedin)   result.linkedin= 'https://' + liM[0];
+    const ghM    = t.match(githubRe);  if(ghM && !result.github)     result.github  = 'https://' + ghM[0];
+    const isContactLine = !!(emailM || phoneM || liM || ghM || urlRe.test(t));
 
-    // ---- Section boundary detection ----
-    if(isHeading(p)){
+    // ---- Section boundary ----
+    if(isSectionHeader(p)){
       headerDone = true;
-      let matched = false;
       for(const [sec, re] of Object.entries(sectionMap)){
-        if(re.test(t)){ section = sec; matched = true; currentExp = null; currentEdu = null; break; }
+        if(re.test(t.trim())){ section = sec; currentExp = null; currentEdu = null; break; }
       }
-      if(!matched){ section = 'other'; }
       continue;
     }
 
-    // ---- Header block (name, title, contact) ----
+    // ---- Header block (name / title / contact) ----
     if(!headerDone){
       headerLineCount++;
-      if(!isContact){
-        if(!result.name && t.length < 70 && !/[,;|]/.test(t) && !yearOnlyRe.test(t))
-          result.name = t;
-        else if(result.name && !result.title && t.length < 100 && !yearOnlyRe.test(t))
-          result.title = t;
+      if(!isContactLine && !isBulletLine){
+        if(!result.name && !hasDateRange) result.name = t;
+        else if(result.name && !result.title && t.length < 150) result.title = extractRole(t);
+      } else if(isContactLine && !result.location){
+        // Extract city/state from pipe-separated contact line: "Newark, DE | phone | email | ..."
+        const parts = t.split('|').map(s => s.trim());
+        const locPart = parts.find(s =>
+          !emailRe.test(s) && !phoneRe.test(s) && !linkedinRe.test(s) &&
+          !githubRe.test(s) && !urlRe.test(s) && s.length > 2 && s.length < 60
+        );
+        if(locPart) result.location = locPart;
       }
-      // After ~8 header lines, assume we've left the header
-      if(headerLineCount > 8) headerDone = true;
+      if(headerLineCount >= 7) headerDone = true;
       continue;
     }
 
     // ---- Summary ----
     if(section === 'summary'){
-      summaryLines.push(t);
+      if(!isBulletLine) summaryLines.push(t);
       continue;
     }
 
     // ---- Skills ----
     if(section === 'skills'){
       const colon = t.indexOf(':');
-      if(colon > 0 && colon < 40){
-        const cat = t.slice(0, colon).toLowerCase().trim();
-        const items = t.slice(colon+1).split(/[,;|•]/).map(x=>x.trim()).filter(Boolean);
-        if(/lang|programm|coding/i.test(cat))          result.skills.languages.push(...items);
-        else if(/frame|librar|sdk/i.test(cat))          result.skills.frameworks.push(...items);
-        else if(/cloud|devops|infra|ci|cd|pipeline/i.test(cat)) result.skills.cloud.push(...items);
-        else if(/data|db|sql|database|storage/i.test(cat)) result.skills.databases.push(...items);
-        else if(/tool|platform|software|ide|editor/i.test(cat)) result.skills.tools.push(...items);
-        else result.skills.other.push(...items);
+      if(colon > 0){
+        const cat = t.slice(0, colon).toLowerCase();
+        const items = t.slice(colon + 1).split(/[,;|]/).map(x => x.trim()).filter(Boolean);
+        // Map skill categories — order matters: more specific checks first
+        if(/ml|ai\b|machine.?learn|deep.?learn|data.?sci|nlp|model|feature/i.test(cat))
+          result.skills.frameworks.push(...items);          // ML/AI & Data Science
+        else if(/visual|tableau|power.?bi|dashboard/i.test(cat))
+          result.skills.tools.push(...items);               // Visualization tools
+        else if(/database|data.?stor|nosql/i.test(cat))
+          result.skills.databases.push(...items);           // Databases / Operating Systems
+        else if(/cloud|devops|infra|ci.?cd|pipeline|deploy|protocol/i.test(cat))
+          result.skills.cloud.push(...items);               // Cloud Technologies
+        else if(/^(lang|programm)/i.test(cat))
+          result.skills.languages.push(...items);           // Programming languages
+        else if(/frame|librar|sdk/i.test(cat))
+          result.skills.frameworks.push(...items);          // Frameworks
+        else if(/tool|platform|software|ide|dev|cod.*pract|pract.*cod/i.test(cat))
+          result.skills.tools.push(...items);               // Dev tools, CI/CD, Git, etc.
+        else
+          result.skills.other.push(...items);
       } else if(t.includes(',') || t.includes('|')){
-        // Plain comma/pipe-separated skill list — put into other if category unclear
-        const items = t.split(/[,|]/).map(x=>x.trim()).filter(Boolean);
-        result.skills.other.push(...items);
-      } else if(t.length < 40 && !yearOnlyRe.test(t)){
-        // Single skill per line
-        result.skills.other.push(t);
+        result.skills.other.push(...t.split(/[,|]/).map(x => x.trim()).filter(Boolean));
       }
       continue;
     }
 
     // ---- Experience ----
+    // Your resume format: Heading-style line = "Company  Date Range"  (no bold)
+    //                     Bold line below    = "Role (Full Time) TechStack Location"
     if(section === 'experience'){
-      const isDateLine = dateRangeRe.test(t);
-      const isBulletLine = p.isBullet || /^[•·▪►\-\*]\s/.test(t);
-
       if(isBulletLine){
-        if(currentExp) currentExp.bullets.push(t.replace(/^[•·▪►\-\*]\s*/,''));
+        if(currentExp) currentExp.bullets.push(t.replace(/^[•·▪►\-\*]\s*/, ''));
         continue;
       }
 
-      if(isDateLine){
-        // Attach date range to most recent exp entry
-        if(currentExp && !currentExp.start){
-          const dateStr = t.match(dateRangeRe)?.[0] || '';
-          const parts = dateStr.split(/[-–—]|(?:\bto\b)/i).map(s=>s.trim());
-          currentExp.start = parts[0] || '';
-          currentExp.end   = parts[1] || 'Present';
-          // Remaining text (non-date) might be location
-          const loc = t.replace(dateRangeRe,'').replace(/[,|]/g,' ').trim();
-          if(loc && !currentExp.location) currentExp.location = loc;
+      // Heading-style (non-section) = company line with embedded dates
+      if(p.headingStyle && !isKnownSection(t)){
+        const dm = t.match(dateRangeRe);
+        let company = t, start = '', end = '';
+        if(dm){
+          company = t.replace(dateRangeRe, '').replace(/[-–—\s,]+$/,'').trim();
+          const dp = dm[0].split(/\s*[-–—]\s*/);
+          start = dp[0]?.trim() || '';
+          end   = dp[1]?.trim() || 'Present';
         }
+        currentExp = { role:'', company, location:'', start, end, bullets:[] };
+        result.experience.push(currentExp);
         continue;
       }
 
-      // Bold/heading-style lines that aren't dates/bullets → new entry or company
-      if((p.bold || p.headingStyle || p.isAllCaps) && !isBulletLine && t.length < 150){
-        // Does the line contain a role/company separator?
-        const sep = t.match(/\s+(?:at|@)\s+|\s*[|｜]\s*|\s*[–—]\s*/);
-        if(sep){
-          // "Role at Company" or "Role | Company" → new entry
-          currentExp = { role: t.slice(0, sep.index).trim(), company: t.slice(sep.index + sep[0].length).trim(), location:'', start:'', end:'', bullets:[] };
-          result.experience.push(currentExp);
-        } else if(currentExp && !currentExp.company && !currentExp.bullets.length){
-          // We already have a role, this is likely the company name on next line
-          currentExp.company = t;
+      // Bold (non-heading) = role line
+      if(p.bold && !p.headingStyle){
+        const role = extractRole(t);
+        if(currentExp && currentExp.company && !currentExp.role){
+          // Fill in the role for the company entry we already created
+          currentExp.role = role;
         } else {
-          // New role entry (company may follow on next line)
-          currentExp = { role: t, company:'', location:'', start:'', end:'', bullets:[] };
+          // No company yet (role-first format), create new entry
+          currentExp = { role, company:'', location:'', start:'', end:'', bullets:[] };
           result.experience.push(currentExp);
+          // Check if date range is embedded in this line too
+          if(hasDateRange){
+            const dm = t.match(dateRangeRe);
+            if(dm){ const dp=dm[0].split(/\s*[-–—]\s*/); currentExp.start=dp[0]?.trim()||''; currentExp.end=dp[1]?.trim()||'Present'; }
+          }
         }
         continue;
       }
 
-      // Plain non-bold line — might be company, location, or date on its own line
+      // Plain line — date or location for current entry
       if(currentExp){
-        if(!currentExp.company && t.length < 80 && !isBulletLine) currentExp.company = t;
-        else if(currentExp.company && !currentExp.location && t.length < 60) currentExp.location = t;
+        if(hasDateRange && !currentExp.start){
+          const dm = t.match(dateRangeRe);
+          if(dm){ const dp=dm[0].split(/\s*[-–—]\s*/); currentExp.start=dp[0]?.trim()||''; currentExp.end=dp[1]?.trim()||'Present'; }
+        } else if(!currentExp.location && t.length < 60){
+          currentExp.location = t;
+        }
       }
       continue;
     }
 
     // ---- Education ----
+    // Your resume format: Heading-style line = "School, Country  Date Range"
+    //                     Plain line below   = "Degree name"
+    //                     Bold line below    = "•Coursework: ..." (skip)
     if(section === 'education'){
-      const isDateLine = dateRangeRe.test(t) || (yearOnlyRe.test(t) && t.length < 30);
-      const isBulletLine = p.isBullet || /^[•·▪►\-\*]\s/.test(t);
+      if(isBulletLine || /^[•]/.test(t)) continue; // skip coursework
 
-      if(isBulletLine) continue; // skip bullets in education
-
-      if((p.bold || p.headingStyle || p.isAllCaps) && !isBulletLine){
-        const sep = t.match(/\s+(?:at|@)\s+|\s*[|｜]\s*|\s*[–—]\s*|\s*,\s*/);
-        if(sep){
-          currentEdu = { degree: t.slice(0, sep.index).trim(), school: t.slice(sep.index + sep[0].length).trim(), year:'', location:'' };
-        } else {
-          currentEdu = { degree: t, school:'', year:'', location:'' };
+      if(p.headingStyle && !isKnownSection(t)){
+        // Parse "Wilmington University, United States Aug 2023 - June 2025"
+        const dm = t.match(dateRangeRe);
+        let schoolStr = t, year = '';
+        if(dm){
+          schoolStr = t.replace(dateRangeRe,'').replace(/[-–—\s,]+$/,'').trim();
+          year = dm[0]; // store full period e.g. "Aug 2023 – June 2025"
         }
+        // Split "School, Country" → school + location
+        const commaIdx = schoolStr.lastIndexOf(',');
+        let school = schoolStr, location = '';
+        if(commaIdx > 0){ location = schoolStr.slice(commaIdx+1).trim(); school = schoolStr.slice(0,commaIdx).trim(); }
+        currentEdu = { degree:'', school, year, location };
         result.education.push(currentEdu);
-      } else if(currentEdu){
-        if(isDateLine){
-          const ym = t.match(yearOnlyRe);
-          if(ym && !currentEdu.year) currentEdu.year = ym[0];
-        } else if(!currentEdu.school && t.length < 80){
-          currentEdu.school = t;
-        } else if(currentEdu.school && !currentEdu.year){
-          const ym = t.match(yearOnlyRe);
-          if(ym) currentEdu.year = ym[0];
-        }
+        continue;
+      }
+
+      // Plain or bold line (non-heading, non-bullet) = degree
+      if(currentEdu && !currentEdu.degree && !hasDateRange && t.length < 120 && !p.headingStyle){
+        currentEdu.degree = t;
+        continue;
       }
       continue;
     }
 
     // ---- Certifications ----
     if(section === 'certifications'){
-      if(!p.isBullet || t.length > 5){
-        // Try to parse "Name — Issuer — Year" or "Name, Issuer, Year"
-        const yr = t.match(/\b(20\d{2}|19\d{2})\b/);
-        const nameOnly = t.replace(/\b(20\d{2}|19\d{2})\b/, '').replace(/[-–,|]+$/, '').trim();
-        result.certifications.push({ name: nameOnly || t, issuer:'', year: yr?yr[0]:'' });
+      if(isBulletLine || t.length < 4) continue;
+      // Format: "Name — Issuer," or "Name — Issuer, Year"
+      const dashM = t.match(/\s*[—–]\s*/);
+      let name = t, issuer = '', year = '';
+      const yr = t.match(yearRe);
+      if(yr) year = yr[0];
+      if(dashM){
+        name   = t.slice(0, dashM.index).trim();
+        issuer = t.slice(dashM.index + dashM[0].length).replace(/,\s*$/, '').trim();
       }
+      name = name.replace(/,\s*$/, '').replace(yearRe,'').trim();
+      result.certifications.push({ name, issuer, year });
       continue;
     }
 
-    // ---- Projects (separate from publications) ----
+    // ---- Projects ----
+    // Format: Bold line = "Project Name | Tech, Tech, Tech"
+    //         Bullet lines below = description
     if(section === 'projects'){
-      // Each bold/heading line is a project title; subsequent plain lines are description
-      if((p.bold || p.headingStyle) && t.length > 3){
-        result.projects.push({ title: t, tech:'', url:'', description:'' });
-      } else if(result.projects.length > 0){
-        const last = result.projects[result.projects.length - 1];
-        if(!last.description) last.description = t;
-        else if(githubRe.test(t) || /https?:\/\//.test(t)) last.url = t.match(/https?:\/\/[^\s]+/)?.[0] || '';
+      if(isBulletLine){
+        if(result.projects.length){
+          const last = result.projects[result.projects.length-1];
+          if(!last.description) last.description = t.replace(/^[•·▪►\-\*]\s*/,'');
+          else last.description += ' ' + t.replace(/^[•·▪►\-\*]\s*/,'');
+        }
+        continue;
+      }
+      if(p.bold && t.length > 3){
+        const pipeIdx = t.indexOf('|');
+        let title = t, tech = '';
+        if(pipeIdx > 0){ title = t.slice(0, pipeIdx).trim(); tech = t.slice(pipeIdx+1).trim(); }
+        result.projects.push({ title, tech, url:'', description:'' });
       }
       continue;
     }
 
     // ---- Publications ----
     if(section === 'publications'){
-      if((p.bold || p.headingStyle) && t.length > 3){
-        result.publications.push({ title: t, venue:'', year:'', url:'', description:'' });
-      } else if(result.publications.length > 0){
-        const last = result.publications[result.publications.length - 1];
-        const yr = t.match(/\b(20\d{2}|19\d{2})\b/);
-        if(yr && !last.year){ last.year = yr[0]; }
+      if(p.bold && t.length > 3){
+        result.publications.push({ title:t, venue:'', year:'', url:'', description:'' });
+      } else if(result.publications.length){
+        const last = result.publications[result.publications.length-1];
+        const yr = t.match(yearRe);
+        if(yr && !last.year) last.year = yr[0];
         else if(!last.description) last.description = t;
       }
       continue;
@@ -1064,13 +1111,9 @@ function parseDocx(xml){
   }
 
   if(summaryLines.length) result.summary = summaryLines.join(' ');
-
-  // Deduplicate skills arrays
   Object.keys(result.skills).forEach(k => {
     result.skills[k] = [...new Set(result.skills[k].filter(Boolean))];
   });
-
-  // Filter out empty experience/education entries
   result.experience = result.experience.filter(e => e.role || e.company);
   result.education  = result.education.filter(e => e.degree || e.school);
 
