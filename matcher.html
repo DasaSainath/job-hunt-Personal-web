@@ -6,270 +6,170 @@
   <title>Resume Matcher</title>
   <link rel="stylesheet" href="css/styles.css" />
   <style>
-    /* ---- Two-panel workspace ---- */
     body { overflow: hidden; }
     .workspace { display: flex; height: calc(100vh - 52px); }
 
     /* Left panel */
     .panel-left {
-      width: 44%;
-      min-width: 320px;
+      width: 46%; min-width: 340px;
       border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      display: flex; flex-direction: column; overflow: hidden;
+      background: #e2e5ea;
     }
-    .panel-left-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 16px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-      flex-shrink: 0;
-      gap: 8px;
+    .panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+      background: var(--surface); flex-shrink: 0; gap: 8px;
     }
-    .panel-left-header-left { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-    .panel-left-header-left h3 {
-      margin: 0;
-      font-size: 0.78rem;
-      color: var(--muted);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+    .panel-header-left h3 {
+      margin: 0; font-size: 0.78rem; color: var(--muted);
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
     }
     .file-name-display {
-      font-size: 0.78rem;
-      color: var(--text);
-      font-weight: 500;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 180px;
+      font-size: 0.78rem; color: var(--text); font-weight: 500;
+      max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .dl-btns { display: flex; gap: 6px; flex-shrink: 0; }
-    .resume-scroll {
-      flex: 1;
-      overflow-y: auto;
-      background: #e8eaed;
-    }
+    .panel-header-btns { display: flex; gap: 6px; flex-shrink: 0; }
 
-    /* Upload prompt */
-    .upload-prompt {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      padding: 32px;
+    /* Upload zone */
+    .upload-zone-wrap {
+      display: flex; align-items: center; justify-content: center;
+      flex: 1; padding: 32px;
     }
     .upload-zone {
-      border: 2px dashed var(--border);
-      border-radius: var(--radius);
-      padding: 40px 32px;
-      text-align: center;
-      background: var(--surface);
-      transition: border-color 0.2s, background 0.2s;
-      cursor: pointer;
-      width: 100%;
+      border: 2px dashed var(--border); border-radius: var(--radius);
+      padding: 48px 36px; text-align: center; background: var(--surface);
+      transition: border-color 0.2s; width: 100%; cursor: pointer;
     }
-    .upload-zone.drag-over {
-      border-color: var(--accent);
-      background: rgba(110,168,254,0.05);
-    }
-    .upload-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .upload-zone.drag-over { border-color: var(--accent); background: rgba(110,168,254,0.04); }
+    .upload-icon { font-size: 3rem; margin-bottom: 14px; }
     .upload-zone p { margin: 6px 0; }
-    .upload-zone .upload-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 12px;
-      padding: 9px 20px;
-      background: var(--accent);
-      color: white;
-      border-radius: var(--radius-sm);
-      font-weight: 600;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: filter 0.15s;
+    .upload-file-label {
+      display: inline-block; margin-top: 16px; padding: 10px 22px;
+      background: var(--accent); color: white; border-radius: var(--radius-sm);
+      font-weight: 600; cursor: pointer; transition: filter 0.15s;
     }
-    .upload-zone .upload-label:hover { filter: brightness(1.1); }
+    .upload-file-label:hover { filter: brightness(1.1); }
 
-    /* Loaded resume area */
-    .resume-loaded { display: none; flex-direction: column; height: 100%; }
-    .resume-loaded.visible { display: flex; }
+    /* Resume preview */
+    .resume-wrap {
+      display: none; flex: 1; overflow-y: auto;
+      padding: 20px; position: relative;
+    }
+    .resume-wrap.visible { display: block; }
+    .doc-loading {
+      display: none; position: absolute; inset: 0;
+      background: rgba(226,229,234,0.85);
+      align-items: center; justify-content: center;
+      font-size: 0.9rem; color: var(--muted); z-index: 10;
+    }
+    .doc-loading.visible { display: flex; }
 
-    /* Added skills banner */
-    .added-banner {
-      display: none;
-      background: rgba(123,227,181,0.1);
-      border-bottom: 1px solid var(--accent-2);
-      padding: 10px 16px;
-      flex-shrink: 0;
+    /* docx-preview overrides — keep original doc look */
+    #resume-preview .docx-wrapper {
+      background: white !important;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.22) !important;
+      margin: 0 auto !important;
+      padding: 0 !important;
     }
-    .added-banner.visible { display: block; }
-    .added-banner-label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--accent-2);
-      margin-bottom: 6px;
-    }
-    .added-banner-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-
-    /* Resume document */
-    .resume-scroll-inner { flex: 1; overflow-y: auto; padding: 24px 20px; }
-    .resume-doc {
-      background: white;
-      padding: 36px 40px;
-      border-radius: 3px;
-      box-shadow: 0 2px 16px rgba(0,0,0,0.18);
-      font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
-      color: #111;
-      font-size: 12.5px;
-      line-height: 1.5;
-    }
-    .resume-doc h1 { font-size: 20px; margin: 0 0 4px; }
-    .resume-doc h2 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1.5px solid #222; margin: 14px 0 5px; padding-bottom: 3px; }
-    .resume-doc h3 { font-size: 12.5px; margin: 8px 0 2px; font-weight: 700; }
-    .resume-doc p { margin: 2px 0; font-size: 12px; }
-    .resume-doc ul { margin: 3px 0 0; padding-left: 16px; }
-    .resume-doc li { margin-bottom: 2px; font-size: 12px; }
-    .resume-doc a { color: #1a56db; }
-    .resume-doc table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    .resume-doc td, .resume-doc th { padding: 2px 4px; vertical-align: top; }
 
     /* Right panel */
     .panel-right { flex: 1; overflow-y: auto; padding: 24px 28px; }
-
     .matcher-header { margin-bottom: 20px; }
     .matcher-header h2 { font-size: 1.35rem; margin: 0 0 4px; }
     .jd-label {
-      font-size: 0.78rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 6px;
-      font-weight: 600;
+      font-size: 0.78rem; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.06em; font-weight: 600; margin-bottom: 6px;
     }
     .analyze-row { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-
-    /* Results */
-    .result-section { margin-top: 22px; }
-    .result-section-title {
-      font-size: 0.78rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      font-weight: 600;
-      margin: 0 0 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .result-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
     .results-hidden { display: none; }
     .match-summary-top { margin-top: 20px; }
+
+    /* Score breakdown bars */
+    .score-breakdown { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .breakdown-row { display: grid; grid-template-columns: 110px 1fr 44px; align-items: center; gap: 10px; }
+    .breakdown-label { font-size: 0.82rem; color: var(--muted); font-weight: 500; }
+    .breakdown-pct { font-size: 0.82rem; font-weight: 700; text-align: right; }
+
+    /* Suggestion cards */
+    .suggestions-list { display: flex; flex-direction: column; gap: 10px; }
+    .suggestion-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--border); border-radius: var(--radius-sm);
+      padding: 12px 14px; display: flex; gap: 12px; align-items: flex-start;
+    }
+    .suggestion-card.type-skill { border-left-color: var(--accent-2); }
+    .suggestion-card.type-experience { border-left-color: var(--warn); }
+    .suggestion-card.type-summary { border-left-color: var(--accent); }
+    .suggestion-body { flex: 1; min-width: 0; }
+    .suggestion-type-label {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; margin-bottom: 4px;
+    }
+    .suggestion-type-label.skill { color: var(--accent-2); }
+    .suggestion-type-label.experience { color: var(--warn); }
+    .suggestion-type-label.summary { color: var(--accent); }
+    .suggestion-text { font-size: 0.9rem; color: var(--text); margin: 0 0 5px; }
+    .suggestion-impact { font-size: 0.78rem; color: var(--muted); }
+    .btn-add-skill {
+      display: inline-flex; align-items: center; padding: 5px 12px;
+      background: var(--accent-2); color: #0f1115; border-radius: var(--radius-sm);
+      border: none; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+      transition: filter 0.15s; white-space: nowrap; flex-shrink: 0;
+    }
+    .btn-add-skill:hover { filter: brightness(1.1); }
+    .btn-add-skill:disabled {
+      background: var(--surface-2); color: var(--muted);
+      border: 1px solid var(--border); cursor: default; filter: none;
+    }
+
+    /* Result section headers */
+    .result-section { margin-top: 22px; }
+    .result-section-title {
+      font-size: 0.78rem; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.06em; font-weight: 600; margin: 0 0 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .result-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
     .jd-keywords-note { margin: 0 0 8px; }
+
+    /* History */
     .history-section { margin-top: 36px; padding-bottom: 40px; }
-
-    /* Score booster cards */
-    .booster-list { display: flex; flex-direction: column; gap: 8px; }
-    .booster-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 10px 14px;
-      transition: border-color 0.15s;
-    }
-    .booster-card:hover { border-color: var(--accent); }
-    .booster-card.is-added { border-color: var(--accent-2); background: rgba(123,227,181,0.06); }
-    .booster-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
-    .booster-skill { font-weight: 600; font-size: 0.92rem; }
-    .booster-delta {
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: var(--accent-2);
-      background: rgba(123,227,181,0.12);
-      border: 1px solid var(--accent-2);
-      border-radius: 999px;
-      padding: 2px 8px;
-      white-space: nowrap;
-    }
-    .booster-no-delta { font-size: 0.78rem; color: var(--muted); }
-    .btn-add {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 6px 14px;
-      background: var(--accent-2);
-      color: #0f1115;
-      border-radius: var(--radius-sm);
-      border: none;
-      cursor: pointer;
-      font-size: 0.82rem;
-      font-weight: 700;
-      transition: filter 0.15s;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .btn-add:hover { filter: brightness(1.1); }
-    .btn-add:disabled {
-      background: var(--surface-2);
-      color: var(--muted);
-      border: 1px solid var(--border);
-      cursor: default;
-      filter: none;
-    }
-
-    /* History table */
+    .history-clear-btn { margin-top: 10px; }
     .history-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
     .history-table th {
-      text-align: left;
-      color: var(--muted);
-      font-weight: 500;
-      padding: 6px 10px;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      text-align: left; color: var(--muted); font-weight: 500;
+      padding: 6px 10px; border-bottom: 1px solid var(--border);
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;
     }
     .history-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     .history-table tr:last-child td { border-bottom: none; }
-    .history-table .score-high { color: var(--accent-2); font-weight: 700; }
-    .history-table .score-mid { color: var(--warn); font-weight: 700; }
-    .history-table .score-low { color: var(--danger); font-weight: 700; }
-    .history-clear-btn { margin-top: 10px; }
-    .jd-preview-cell {
-      max-width: 200px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      color: var(--muted);
-      font-size: 0.8rem;
+    .score-high { color: var(--accent-2); font-weight: 700; }
+    .score-mid { color: var(--warn); font-weight: 700; }
+    .score-low { color: var(--danger); font-weight: 700; }
+    .jd-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 0.8rem; }
+
+    /* txt file display */
+    .txt-display {
+      background: white; padding: 36px 40px; font-family: monospace;
+      font-size: 12.5px; line-height: 1.6; white-space: pre-wrap;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.18); color: #111;
     }
 
     /* Print */
     @media print {
-      nav, .panel-right, .panel-left-header, .added-banner { display: none !important; }
+      nav, .panel-right, .panel-header { display: none !important; }
       body { overflow: visible !important; background: white !important; }
       .workspace { display: block !important; height: auto !important; }
-      .panel-left { width: 100% !important; border: none !important; overflow: visible !important; }
-      .resume-loaded { display: flex !important; height: auto !important; }
-      .resume-scroll-inner { overflow: visible !important; padding: 0 !important; }
-      .resume-doc { box-shadow: none !important; padding: 0 !important; }
+      .panel-left { width: 100% !important; border: none !important; background: white !important; overflow: visible !important; }
+      .resume-wrap { display: block !important; overflow: visible !important; padding: 0 !important; }
     }
 
-    /* Responsive */
     @media (max-width: 900px) {
       body { overflow: auto; }
       .workspace { flex-direction: column; height: auto; }
       .panel-left { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid var(--border); }
-      .resume-scroll-inner { max-height: 460px; }
+      .resume-wrap { max-height: 500px; }
       .panel-right { padding: 16px; }
     }
   </style>
@@ -287,47 +187,35 @@
   </nav>
 
   <div class="workspace">
-
     <!-- LEFT: Resume -->
     <div class="panel-left">
-      <div class="panel-left-header">
-        <div class="panel-left-header-left">
-          <h3>Resume</h3>
+      <div class="panel-header">
+        <div class="panel-header-left">
+          <h3>Your Resume</h3>
           <span class="file-name-display" id="file-name-display">No file loaded</span>
         </div>
-        <div class="dl-btns">
-          <label class="btn btn-ghost btn-sm" for="file-change" title="Upload different resume">↑ Change</label>
+        <div class="panel-header-btns">
+          <label class="btn btn-ghost btn-sm" for="file-change">↑ Change</label>
           <input type="file" id="file-change" accept=".docx,.txt" hidden />
-          <button type="button" class="btn btn-ghost btn-sm" id="dl-pdf" title="Print / Save as PDF">⬇ PDF</button>
-          <button type="button" class="btn btn-sm" id="dl-word" title="Download as Word (.docx)">⬇ Word</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="dl-pdf">⬇ PDF</button>
+          <button type="button" class="btn btn-sm" id="dl-word">⬇ Word</button>
         </div>
       </div>
 
-      <div class="resume-scroll">
-        <!-- Upload prompt (shown when no file loaded) -->
-        <div class="upload-prompt" id="upload-prompt">
-          <div class="upload-zone" id="upload-zone">
-            <div class="upload-icon">📄</div>
-            <p><strong>Upload your resume</strong></p>
-            <p class="muted small">Drag &amp; drop here, or click to choose</p>
-            <label class="upload-label" for="file-input">
-              Choose Resume File
-            </label>
-            <input type="file" id="file-input" accept=".docx,.txt" hidden />
-            <p class="muted small" style="margin-top:14px;">Supports .docx · .txt</p>
-          </div>
+      <div class="upload-zone-wrap" id="upload-zone-wrap">
+        <div class="upload-zone" id="upload-zone">
+          <div class="upload-icon">📄</div>
+          <p><strong>Upload your resume</strong></p>
+          <p class="muted small">Processed 100% in your browser — never uploaded anywhere</p>
+          <label class="upload-file-label" for="file-input">Choose .docx or .txt</label>
+          <input type="file" id="file-input" accept=".docx,.txt" hidden />
+          <p class="muted small">Drag &amp; drop also works</p>
         </div>
+      </div>
 
-        <!-- Loaded resume (shown after upload) -->
-        <div class="resume-loaded" id="resume-loaded">
-          <div class="added-banner" id="added-banner">
-            <div class="added-banner-label">Skills Added This Session</div>
-            <div class="added-banner-chips" id="added-chips"></div>
-          </div>
-          <div class="resume-scroll-inner">
-            <div class="resume-doc" id="resume-preview"></div>
-          </div>
-        </div>
+      <div class="resume-wrap" id="resume-wrap">
+        <div class="doc-loading" id="doc-loading">Rendering document…</div>
+        <div id="resume-preview"></div>
       </div>
     </div>
 
@@ -335,7 +223,7 @@
     <div class="panel-right">
       <div class="matcher-header">
         <h2>Resume ↔ JD Matcher</h2>
-        <p class="muted small">Upload your resume · paste a job description · get your score · click skills to add them · download updated resume.</p>
+        <p class="muted small">Upload your resume · paste a JD · see score by section · add missing skills directly into your resume.</p>
       </div>
 
       <div>
@@ -353,45 +241,52 @@
           <div class="score" id="final-score">—</div>
           <div class="score-details">
             <h3 id="headline">—</h3>
-            <p id="breakdown" class="muted"></p>
+            <p id="breakdown-text" class="muted"></p>
           </div>
         </div>
 
         <div class="result-section">
-          <div class="result-section-title">Matched Skills</div>
-          <div id="matched" class="chip-row"></div>
+          <div class="result-section-title">Score by Section</div>
+          <div class="score-breakdown">
+            <div class="breakdown-row">
+              <span class="breakdown-label">Skills</span>
+              <div class="progress"><div id="bar-skills"></div></div>
+              <span class="breakdown-pct" id="pct-skills">0%</span>
+            </div>
+            <div class="breakdown-row">
+              <span class="breakdown-label">Experience</span>
+              <div class="progress"><div id="bar-exp"></div></div>
+              <span class="breakdown-pct" id="pct-exp">0%</span>
+            </div>
+            <div class="breakdown-row">
+              <span class="breakdown-label">Summary</span>
+              <div class="progress"><div id="bar-sum"></div></div>
+              <span class="breakdown-pct" id="pct-sum">0%</span>
+            </div>
+          </div>
         </div>
 
         <div class="result-section">
-          <div class="result-section-title">Missing Skills</div>
-          <div id="missing" class="chip-row"></div>
-        </div>
-
-        <div class="result-section">
-          <div class="result-section-title">Score Boosters — click to add to resume</div>
-          <div class="booster-list" id="boosters"></div>
+          <div class="result-section-title">What to Add / Improve</div>
+          <div class="suggestions-list" id="suggestions-list"></div>
         </div>
 
         <div class="result-section">
           <div class="result-section-title">JD Keywords to Mirror</div>
-          <p class="muted small jd-keywords-note">Exact terms the JD uses — mirror them where truthful for ATS scoring.</p>
+          <p class="muted small jd-keywords-note">Add these exact terms to the right sections for ATS scoring.</p>
           <div id="keywords" class="chip-row"></div>
         </div>
       </div>
 
       <div class="result-section history-section">
         <div class="result-section-title">Match History</div>
-        <div id="history-body">
-          <p class="muted small">No history yet — analyze a job to start tracking.</p>
-        </div>
+        <div id="history-body"><p class="muted small">No history yet.</p></div>
       </div>
     </div>
-
   </div>
 
-  <!-- CDN libraries -->
-  <script src="https://unpkg.com/mammoth@1.6.0/mammoth.browser.min.js"></script>
-  <script src="https://unpkg.com/html-docx-js@0.3.1/dist/html-docx.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx-preview/dist/docx-preview.min.js"></script>
   <script src="https://unpkg.com/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 
   <script type="module">
@@ -401,287 +296,339 @@
     markActiveNav();
 
     const HISTORY_KEY = 'jh_match_history';
-
     let skills = [];
-    let uploadedHtml = '';      // Mammoth-converted HTML for display
-    let uploadedText = '';      // plain text for matching
+    let originalBytes = null;    // never modified
+    let currentDocBytes = null;  // receives yellow-highlighted additions only
     let uploadedFileName = '';
+    let resumeText = '';
+    let resumeSections = {};
     let addedSkills = [];
     let currentJD = '';
+    let isDocx = false;
 
-    // ---- File upload handling ----
-    function setupUpload(inputEl) {
-      inputEl.addEventListener('change', e => {
-        const file = e.target.files[0];
-        if (file) handleFile(file);
+    // ---- Upload ----
+    ['file-input', 'file-change'].forEach(id => {
+      document.getElementById(id).addEventListener('change', e => {
+        if (e.target.files[0]) handleFile(e.target.files[0]);
         e.target.value = '';
       });
-    }
+    });
 
-    setupUpload(document.getElementById('file-input'));
-    setupUpload(document.getElementById('file-change'));
-
-    const uploadZone = document.getElementById('upload-zone');
-    uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
-    uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
-    uploadZone.addEventListener('drop', e => {
-      e.preventDefault();
-      uploadZone.classList.remove('drag-over');
-      const file = e.dataTransfer.files[0];
-      if (file) handleFile(file);
+    const zone = document.getElementById('upload-zone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault(); zone.classList.remove('drag-over');
+      if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
     });
 
     async function handleFile(file) {
       const ext = file.name.split('.').pop().toLowerCase();
-      document.getElementById('stats').textContent = 'Parsing resume…';
-
+      setLoading(true);
       try {
-        if (ext === 'docx') {
-          const arrayBuffer = await file.arrayBuffer();
-          const result = await mammoth.convertToHtml({ arrayBuffer });
-          uploadedHtml = result.value;
-          const tmp = document.createElement('div');
-          tmp.innerHTML = uploadedHtml;
-          uploadedText = tmp.textContent || tmp.innerText || '';
-        } else if (ext === 'txt') {
-          uploadedText = await file.text();
-          uploadedHtml = `<pre style="white-space:pre-wrap;font-family:inherit;font-size:12px">${escapeHtml(uploadedText)}</pre>`;
+        const buf = await file.arrayBuffer();
+        originalBytes = buf.slice(0);
+        currentDocBytes = buf.slice(0);
+        uploadedFileName = file.name;
+        isDocx = (ext === 'docx');
+        addedSkills = [];
+
+        if (isDocx) {
+          const zip = await JSZip.loadAsync(buf.slice(0));
+          const xml = await zip.file('word/document.xml').async('string');
+          const parsed = parseXmlSections(xml);
+          resumeText = parsed.allText;
+          resumeSections = parsed.sections;
+          await renderDoc(buf.slice(0));
         } else {
-          document.getElementById('stats').textContent = 'Unsupported format. Use .docx or .txt';
-          return;
+          resumeText = await file.text();
+          resumeSections = {};
+          document.getElementById('resume-preview').innerHTML =
+            `<div class="txt-display">${escapeHtml(resumeText)}</div>`;
         }
 
-        uploadedFileName = file.name;
-        addedSkills = [];
-        showResumePanel();
+        document.getElementById('file-name-display').textContent = file.name;
+        document.getElementById('upload-zone-wrap').style.display = 'none';
+        document.getElementById('resume-wrap').classList.add('visible');
         document.getElementById('stats').textContent =
-          `Resume loaded (${uploadedText.length.toLocaleString()} chars) · ${skills.length} skills in dictionary`;
+          `Resume loaded · ${resumeText.length.toLocaleString()} chars · ${skills.length} skills in dictionary`;
       } catch (err) {
-        document.getElementById('stats').textContent = 'Error reading file: ' + err.message;
         console.error(err);
+        document.getElementById('stats').textContent = 'Error: ' + err.message;
       }
+      setLoading(false);
     }
 
-    function showResumePanel() {
-      document.getElementById('upload-prompt').style.display = 'none';
-      document.getElementById('resume-loaded').classList.add('visible');
-      document.getElementById('resume-preview').innerHTML = uploadedHtml;
-      document.getElementById('file-name-display').textContent = uploadedFileName;
-      updateAddedBanner();
+    async function renderDoc(buf) {
+      const container = document.getElementById('resume-preview');
+      container.innerHTML = '';
+      await docx.renderAsync(buf, container, undefined, {
+        inWrapper: true,
+        ignoreWidth: false,
+        ignoreHeight: true,
+        ignoreFonts: false,
+        breakPages: true,
+        renderHeaders: true,
+        renderFooters: true,
+        useBase64URL: true,
+      });
     }
 
-    function updateAddedBanner() {
-      const banner = document.getElementById('added-banner');
-      const chips = document.getElementById('added-chips');
-      if (addedSkills.length === 0) {
-        banner.classList.remove('visible');
-      } else {
-        banner.classList.add('visible');
-        chips.innerHTML = addedSkills.map(s =>
-          `<span class="chip matched">${escapeHtml(s)}</span>`
-        ).join('');
+    function setLoading(on) {
+      document.getElementById('doc-loading').classList.toggle('visible', on);
+    }
+
+    // ---- XML section parser ----
+    function parseXmlSections(xml) {
+      const sections = { summary: [], skills: [], experience: [], education: [] };
+      let current = 'other';
+      const allParts = [];
+
+      for (const m of xml.matchAll(/<w:p[ >][\s\S]*?<\/w:p>/g)) {
+        const paraXml = m[0];
+        const texts = [...paraXml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(t => t[1]);
+        const text = texts.join('').trim();
+        if (!text) continue;
+        allParts.push(text);
+
+        const isBold = /<w:b[ \/>]|<w:b>/.test(paraXml);
+        const isHeadingStyle = /<w:pStyle w:val="[^"]*[Hh]eading/.test(paraXml);
+        const isAllCaps = text.length < 60 && text === text.toUpperCase() && /[A-Z]/.test(text);
+        const isHeading = isHeadingStyle || (isBold && isAllCaps) || (isAllCaps && text.length > 2 && text.length < 40);
+
+        if (isHeading) {
+          const t = text.toLowerCase();
+          if (/summary|objective|profile|about/.test(t)) current = 'summary';
+          else if (/skills?|technical|competenc|technolog|proficien/.test(t)) current = 'skills';
+          else if (/experience|employment|work|career|professional/.test(t)) current = 'experience';
+          else if (/education|academic|degree|university|college/.test(t)) current = 'education';
+        } else if (sections[current]) {
+          sections[current].push(text);
+        }
       }
+
+      return { allText: allParts.join(' '), sections };
     }
 
     // ---- Analysis ----
     function buildMatchText() {
-      return uploadedText + (addedSkills.length ? ' ' + addedSkills.join(' ') : '');
+      return resumeText + (addedSkills.length ? ' ' + addedSkills.join(' ') : '');
+    }
+
+    function sectionOverlap(sectionArr, jdWords) {
+      if (!sectionArr?.length || !jdWords.length) return 0;
+      const text = sectionArr.join(' ').toLowerCase();
+      const hit = jdWords.filter(w => text.includes(w));
+      return Math.min(100, Math.round((hit.length / jdWords.length) * 100));
     }
 
     function analyze() {
       const jd = document.getElementById('jd').value.trim();
       if (!jd) { alert('Paste a job description first.'); return; }
-      if (!uploadedText) { alert('Upload your resume first — use the left panel.'); return; }
+      if (!resumeText) { alert('Upload your resume first.'); return; }
       currentJD = jd;
 
       const result = matchResumeToJD(buildMatchText(), jd, skills);
-      renderResults(result);
+      renderResults(result, jd);
       saveHistory(result, jd);
     }
 
-    function renderResults(r) {
+    function renderResults(r, jd) {
       document.getElementById('results').classList.remove('results-hidden');
 
       const scoreEl = document.getElementById('final-score');
       scoreEl.textContent = r.score + '%';
       scoreEl.className = 'score ' + scoreClass(r.score);
 
-      const headlineMap = [[75, 'Strong match — apply today.'], [55, 'Good match — worth a tailored application.'], [35, 'Partial match — tailor heavily or skip.'], [0, 'Weak match — probably not worth the time.']];
-      document.getElementById('headline').textContent = headlineMap.find(([t]) => r.score >= t)[1];
+      const hl = [[75,'Strong match — apply today.'],[55,'Good match — worth a tailored application.'],[35,'Partial match — tailor heavily or skip.'],[0,'Weak match — probably not worth the time.']];
+      document.getElementById('headline').textContent = hl.find(([t]) => r.score >= t)[1];
+      document.getElementById('breakdown-text').textContent =
+        `Skill overlap: ${r.skillOverlapPct ?? '—'}% · Content similarity: ${r.contentSimPct}%`;
 
-      const parts = [];
-      if (r.skillOverlapPct !== null) parts.push(`Skill overlap: ${r.skillOverlapPct}%`);
-      parts.push(`Content similarity: ${r.contentSimPct}%`);
-      document.getElementById('breakdown').textContent = parts.join(' · ');
+      // Section bars
+      const jdWords = [...new Set(jd.toLowerCase().split(/\W+/).filter(w => w.length > 3))];
+      const bars = [
+        ['skills', 'bar-skills', 'pct-skills', sectionOverlap(resumeSections.skills, jdWords)],
+        ['exp',    'bar-exp',    'pct-exp',    sectionOverlap(resumeSections.experience, jdWords)],
+        ['sum',    'bar-sum',    'pct-sum',    sectionOverlap(resumeSections.summary, jdWords)],
+      ];
+      bars.forEach(([, barId, pctId, pct]) => {
+        document.getElementById(barId).style.width = pct + '%';
+        document.getElementById(pctId).textContent = pct + '%';
+      });
 
-      document.getElementById('matched').innerHTML = r.matchedSkills.length
-        ? r.matchedSkills.map(s => `<span class="chip matched">${escapeHtml(s)}</span>`).join('')
-        : '<span class="muted small">No skill matches found.</span>';
-
-      document.getElementById('missing').innerHTML = r.missingSkills.length
-        ? r.missingSkills.map(s => `<span class="chip missing">${escapeHtml(s)}</span>`).join('')
-        : '<span class="muted small">Your resume covers every skill in this JD.</span>';
-
+      // Keywords
       document.getElementById('keywords').innerHTML = r.jdOnlyKeywords.length
         ? r.jdOnlyKeywords.map(k => `<span class="chip">${escapeHtml(k.term)}</span>`).join('')
-        : '<span class="muted small">No distinctive JD-only terms found.</span>';
+        : '<span class="muted small">No distinctive JD-only terms.</span>';
 
-      renderBoosters(r);
+      renderSuggestions(r, jdWords);
     }
 
-    function renderBoosters(r) {
-      const container = document.getElementById('boosters');
-      const candidates = r.missingSkills.slice(0, 12);
+    function renderSuggestions(r, jdWords) {
+      const container = document.getElementById('suggestions-list');
+      const items = [];
 
-      if (!candidates.length) {
-        container.innerHTML = '<p class="muted small">No missing skills to boost.</p>';
+      // Missing skills — can be added directly
+      r.missingSkills.slice(0, 8).forEach(skill => {
+        const already = addedSkills.includes(skill);
+        const trial = matchResumeToJD(buildMatchText() + ' ' + skill + ' ' + skill, currentJD, skills);
+        const delta = trial.score - r.score;
+        items.push({ type: 'skill', label: 'Missing Skill',
+          text: `Add <strong>${escapeHtml(skill)}</strong> to your skills section`,
+          impact: delta > 0 ? `+${delta}% score impact` : 'Improves keyword coverage',
+          skill, already });
+      });
+
+      // Experience gaps — guidance only
+      const expText = (resumeSections.experience || []).join(' ').toLowerCase();
+      const stopWords = new Set(['experience','position','worked','years','using','ability','required','preferred','including']);
+      jdWords.filter(w => w.length > 4 && !expText.includes(w) && !stopWords.has(w)).slice(0, 4).forEach(kw => {
+        items.push({ type: 'experience', label: 'Experience Gap',
+          text: `Mention <strong>${escapeHtml(kw)}</strong> in your experience bullets where it truthfully applies`,
+          impact: 'Strengthens experience-to-JD alignment' });
+      });
+
+      // Summary gaps — guidance only
+      const sumText = (resumeSections.summary || []).join(' ').toLowerCase();
+      jdWords.filter(w => w.length > 5 && !sumText.includes(w) && !stopWords.has(w)).slice(0, 3).forEach(kw => {
+        items.push({ type: 'summary', label: 'Summary Gap',
+          text: `Add <strong>${escapeHtml(kw)}</strong> to your professional summary`,
+          impact: 'Improves first-impression keyword match' });
+      });
+
+      if (!items.length) {
+        container.innerHTML = '<p class="muted small">Great coverage — no major gaps found.</p>';
         return;
       }
 
-      const base = buildMatchText();
-      const boosts = candidates.map(skill => {
-        const trial = matchResumeToJD(base + ' ' + skill + ' ' + skill, currentJD, skills);
-        return { skill, delta: trial.score - r.score, newScore: trial.score };
-      }).sort((a, b) => b.delta - a.delta);
-
-      container.innerHTML = boosts.map(b => {
-        const already = addedSkills.includes(b.skill);
-        return `
-          <div class="booster-card ${already ? 'is-added' : ''}">
-            <div class="booster-left">
-              <span class="booster-skill">${escapeHtml(b.skill)}</span>
-              ${b.delta > 0
-                ? `<span class="booster-delta">+${b.delta}% &rarr; ${b.newScore}%</span>`
-                : `<span class="booster-no-delta">minimal impact</span>`}
-            </div>
-            <button type="button" class="btn-add" data-skill="${escapeHtml(b.skill)}" ${already ? 'disabled' : ''}>
-              ${already ? '✓ Added' : '+ Add to Resume'}
-            </button>
+      container.innerHTML = items.map(it => `
+        <div class="suggestion-card type-${it.type}">
+          <div class="suggestion-body">
+            <div class="suggestion-type-label ${it.type}">${escapeHtml(it.label)}</div>
+            <p class="suggestion-text">${it.text}</p>
+            <div class="suggestion-impact">${escapeHtml(it.impact)}</div>
           </div>
-        `;
-      }).join('');
+          ${it.skill
+            ? `<button type="button" class="btn-add-skill" data-skill="${escapeHtml(it.skill)}" ${it.already ? 'disabled' : ''}>
+                 ${it.already ? '✓ Added' : '+ Add'}
+               </button>`
+            : ''}
+        </div>`).join('');
 
-      container.querySelectorAll('.btn-add:not([disabled])').forEach(btn => {
+      container.querySelectorAll('.btn-add-skill:not([disabled])').forEach(btn => {
         btn.addEventListener('click', () => addSkill(btn.dataset.skill));
       });
     }
 
-    function addSkill(skill) {
+    // ---- Add skill to docx XML ----
+    function escXml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function injectSkillIntoXml(xml, skill) {
+      const run = `<w:r><w:rPr><w:highlight w:val="yellow"/></w:rPr><w:t xml:space="preserve">, ${escXml(skill)}</w:t></w:r>`;
+
+      // Strategy 1: find paragraph right after a "Skills" heading paragraph
+      const headRe = /<w:t[^>]*>[^<]*(skills?|technical skills?|competencies|technologies)[^<]*<\/w:t>/i;
+      const headMatch = xml.match(headRe);
+      if (headMatch) {
+        const hPos = xml.indexOf(headMatch[0]);
+        const hEnd = xml.indexOf('</w:p>', hPos);
+        if (hEnd !== -1) {
+          let s = hEnd + 6;
+          while (s < xml.length) {
+            const pEnd = xml.indexOf('</w:p>', s);
+            if (pEnd === -1) break;
+            const seg = xml.slice(s, pEnd);
+            const txt = (seg.match(/<w:t[^>]*>([^<]+)<\/w:t>/g) || []).map(m => m.replace(/<[^>]+>/g,'')).join('').trim();
+            if (txt.length > 2) return xml.slice(0, pEnd) + run + xml.slice(pEnd);
+            s = pEnd + 6;
+          }
+        }
+      }
+
+      // Strategy 2: paragraph with most commas (skill list)
+      let bestPos = -1, maxCommas = 2, s = 0;
+      while (s < xml.length) {
+        const pEnd = xml.indexOf('</w:p>', s);
+        if (pEnd === -1) break;
+        const commas = (xml.slice(s, pEnd).match(/,/g) || []).length;
+        if (commas > maxCommas) { maxCommas = commas; bestPos = pEnd; }
+        s = pEnd + 6;
+      }
+      if (bestPos >= 0) return xml.slice(0, bestPos) + run + xml.slice(bestPos);
+
+      // Fallback: before last paragraph close
+      const last = xml.lastIndexOf('</w:p>');
+      return last >= 0 ? xml.slice(0, last) + run + xml.slice(last) : xml;
+    }
+
+    async function addSkill(skill) {
       if (addedSkills.includes(skill)) return;
       addedSkills.push(skill);
-      updateAddedBanner();
+
+      if (isDocx) {
+        setLoading(true);
+        try {
+          const zip = await JSZip.loadAsync(currentDocBytes.slice(0));
+          const xml = await zip.file('word/document.xml').async('string');
+          zip.file('word/document.xml', injectSkillIntoXml(xml, skill));
+          currentDocBytes = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
+          await renderDoc(currentDocBytes.slice(0));
+        } catch (e) { console.warn('Inject failed:', e); }
+        setLoading(false);
+      }
+
       if (currentJD) analyze();
     }
 
+    // ---- Downloads ----
+    document.getElementById('dl-pdf').addEventListener('click', () => window.print());
+    document.getElementById('dl-word').addEventListener('click', async () => {
+      if (!currentDocBytes) { alert('Upload a resume first.'); return; }
+      const blob = new Blob([currentDocBytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+      saveAs(blob, uploadedFileName.replace(/\.[^.]+$/, '') + '_updated.docx');
+    });
+
     // ---- History ----
-    function saveHistory(result, jd) {
-      const history = getHistory();
-      history.unshift({
-        date: new Date().toISOString(),
-        score: result.score,
-        matched: result.matchedSkills.length,
-        missing: result.missingSkills.length,
-        fileName: uploadedFileName,
-        jdSnippet: jd.slice(0, 140).replace(/\s+/g, ' ')
-      });
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 20)));
+    function saveHistory(r, jd) {
+      const h = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      h.unshift({ date: new Date().toISOString(), score: r.score, matched: r.matchedSkills.length, missing: r.missingSkills.length, snippet: jd.slice(0, 120).replace(/\s+/g,' ') });
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, 20)));
       renderHistory();
     }
 
-    function getHistory() {
-      try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
-    }
-
     function renderHistory() {
-      const history = getHistory();
+      const h = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
       const el = document.getElementById('history-body');
-      if (!history.length) {
-        el.innerHTML = '<p class="muted small">No history yet.</p>';
-        return;
-      }
+      if (!h.length) { el.innerHTML = '<p class="muted small">No history yet.</p>'; return; }
       const cls = s => s >= 70 ? 'score-high' : s >= 50 ? 'score-mid' : 'score-low';
       el.innerHTML = `
         <table class="history-table">
-          <thead>
-            <tr><th>Date</th><th>Score</th><th>Matched</th><th>Missing</th><th>JD Preview</th></tr>
-          </thead>
-          <tbody>
-            ${history.map(h => `
-              <tr>
-                <td class="muted small">${new Date(h.date).toLocaleDateString()}</td>
-                <td class="${cls(h.score)}">${h.score}%</td>
-                <td class="muted small">${h.matched}</td>
-                <td class="muted small">${h.missing}</td>
-                <td class="jd-preview-cell">${escapeHtml(h.jdSnippet)}…</td>
-              </tr>
-            `).join('')}
-          </tbody>
+          <thead><tr><th>Date</th><th>Score</th><th>Matched</th><th>Missing</th><th>JD Preview</th></tr></thead>
+          <tbody>${h.map(e => `<tr>
+            <td class="muted small">${new Date(e.date).toLocaleDateString()}</td>
+            <td class="${cls(e.score)}">${e.score}%</td>
+            <td class="muted small">${e.matched}</td>
+            <td class="muted small">${e.missing}</td>
+            <td class="jd-cell">${escapeHtml(e.snippet)}…</td>
+          </tr>`).join('')}</tbody>
         </table>
-        <button type="button" class="btn btn-ghost btn-sm" id="clear-history" class="history-clear-btn">Clear History</button>
-      `;
-      document.getElementById('clear-history').addEventListener('click', () => {
-        localStorage.removeItem(HISTORY_KEY);
-        renderHistory();
+        <button type="button" class="btn btn-ghost btn-sm history-clear-btn" id="clear-hist">Clear History</button>`;
+      document.getElementById('clear-hist').addEventListener('click', () => {
+        localStorage.removeItem(HISTORY_KEY); renderHistory();
       });
-    }
-
-    // ---- Downloads ----
-    function downloadPdf() { window.print(); }
-
-    function downloadWord() {
-      if (!uploadedHtml) { alert('Upload a resume first.'); return; }
-
-      const addedSection = addedSkills.length
-        ? `<h2 style="color:#065f46;border-top:2px solid #065f46;padding-top:6px;margin-top:20px;">SKILLS TO ADD</h2>
-           <p style="color:#065f46;font-weight:bold">${addedSkills.map(s => escapeHtml(s)).join(', ')}</p>
-           <hr/>`
-        : '';
-
-      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
-        body{font-family:Calibri,Arial,sans-serif;font-size:11pt;margin:1in;color:#111;line-height:1.4}
-        h1{font-size:18pt;margin:0 0 4px}
-        h2{font-size:10pt;font-weight:bold;text-transform:uppercase;letter-spacing:.06em;border-bottom:1.5px solid #222;margin:12px 0 4px;padding-bottom:2px}
-        h3{font-size:11pt;margin:6px 0 2px}
-        p{margin:2px 0;font-size:10.5pt}
-        ul{margin:3px 0 0;padding-left:18px}
-        li{margin-bottom:1px;font-size:10.5pt}
-        a{color:#1a56db}
-        table{width:100%;border-collapse:collapse}
-        td,th{padding:2px 4px;vertical-align:top}
-      </style></head><body>${addedSection}${uploadedHtml}</body></html>`;
-
-      if (typeof htmlDocx !== 'undefined') {
-        try {
-          const blob = htmlDocx.asBlob(html);
-          const name = uploadedFileName.replace(/\.[^.]+$/, '') + '_updated.docx';
-          saveAs(blob, name);
-          return;
-        } catch (e) {
-          console.warn('html-docx-js error:', e);
-        }
-      }
-      // Fallback: .doc (Word-compatible HTML)
-      const blob = new Blob([html], { type: 'application/msword' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = uploadedFileName.replace(/\.[^.]+$/, '') + '_updated.doc';
-      a.click();
     }
 
     // ---- Init ----
     (async () => {
-      try {
-        skills = await loadSkills();
-        document.getElementById('stats').textContent = `${skills.length} skills in dictionary · upload your resume to begin`;
-        renderHistory();
-      } catch (err) {
-        document.getElementById('stats').textContent = 'Error loading skills: ' + err.message;
-      }
+      skills = await loadSkills().catch(() => []);
+      document.getElementById('stats').textContent = `${skills.length} skills in dictionary · upload your resume to begin`;
+      renderHistory();
     })();
 
     document.getElementById('run-btn').addEventListener('click', analyze);
-    document.getElementById('dl-pdf').addEventListener('click', downloadPdf);
-    document.getElementById('dl-word').addEventListener('click', downloadWord);
     document.getElementById('clear-btn').addEventListener('click', () => {
       document.getElementById('jd').value = '';
       document.getElementById('results').classList.add('results-hidden');
