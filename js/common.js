@@ -9,6 +9,14 @@ export async function loadJSON(path) {
 }
 
 export async function loadResume() {
+  // Prefer user-edited profile from localStorage if it exists and has a name
+  try {
+    const raw = localStorage.getItem('jh_profile');
+    if (raw) {
+      const p = JSON.parse(raw);
+      if (p && p.name) return p;
+    }
+  } catch (e) { /* fall through */ }
   return loadJSON('data/resume.json');
 }
 

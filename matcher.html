@@ -161,6 +161,27 @@
     }
     .btn-add-sentence { background: var(--accent); }
 
+    /* Score explanation card */
+    .score-explain {
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 14px 16px; margin-top: 4px;
+    }
+    .score-explain-title {
+      font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--muted); margin: 0 0 10px;
+    }
+    .explain-row {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-size: 0.84rem; color: var(--text); margin-bottom: 7px; line-height: 1.45;
+    }
+    .explain-row:last-child { margin-bottom: 0; }
+    .explain-icon { font-size: 0.9rem; flex-shrink: 0; margin-top: 1px; }
+    .explain-focus {
+      margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+      font-size: 0.82rem; color: var(--muted);
+    }
+    .explain-focus strong { color: var(--text); }
+
     /* Result section headers */
     .result-section { margin-top: 22px; }
     .result-section-title {
@@ -233,6 +254,7 @@
         <a href="index.html">About</a>
         <a href="jobs.html">Jobs</a>
         <a href="matcher.html" class="active">Matcher</a>
+        <a href="profile.html">Profile</a>
       </div>
       <div class="nav-right">
         <div class="nav-user">
@@ -327,6 +349,11 @@
               <span class="breakdown-pct" id="pct-sum">0%</span>
             </div>
           </div>
+        </div>
+
+        <div class="result-section">
+          <div class="result-section-title">Why Is Your Score This Low?</div>
+          <div class="score-explain" id="score-explain"></div>
         </div>
 
         <div class="result-section">
@@ -528,6 +555,78 @@
         : '<span class="muted small">No distinctive JD-only terms.</span>';
 
       renderSuggestions(r, jdWords);
+      renderScoreExplanation(r, jd, jdWords);
+    }
+
+    function renderScoreExplanation(r, jd, jdWords) {
+      const el = document.getElementById('score-explain');
+      const score = r.score;
+
+      // Detect JD domain focus
+      const jdLow = jd.toLowerCase();
+      const domains = [
+        { name: 'Machine Learning / AI',  re: /machine.?learn|deep.?learn|neural|llm|model.?train|pytorch|tensorflow|scikit|nlp|computer.?vision|data.?scien/ },
+        { name: 'Data Engineering',       re: /spark|kafka|airflow|etl|pipeline|databricks|snowflake|dbt|hadoop|data.?engineer/ },
+        { name: 'Cloud / DevOps',         re: /kubernetes|k8s|terraform|ci.?cd|docker|devops|helm|github.?actions|jenkins|aws|azure|gcp|cloud/ },
+        { name: 'Frontend / UI',          re: /react|angular|vue|typescript|frontend|tailwind|css|html|next\.?js|svelte|component/ },
+        { name: 'Backend / APIs',         re: /microservice|rest.?api|graphql|grpc|spring|django|flask|fastapi|node\.?js|backend/ },
+        { name: 'SQL / Analytics',        re: /sql|postgresql|mysql|redshift|bigquery|analytic|tableau|power.?bi|looker|dbt/ },
+      ];
+      const focus = domains.find(d => d.re.test(jdLow));
+
+      const skillPct = r.skillOverlapPct ?? 0;
+      const contentPct = r.contentSimPct ?? 0;
+      const totalSkills = r.matchedSkills.length + r.missingSkills.length;
+      const matchedCount = r.matchedSkills.length;
+      const missingCount = r.missingSkills.length;
+
+      const rows = [];
+
+      // Row 1: overall diagnosis
+      if (score < 30) {
+        rows.push({ icon: '🔴', text: `Very low match — your resume and this JD cover very different ground. The role likely needs specific experience your resume doesn't yet show.` });
+      } else if (score < 50) {
+        rows.push({ icon: '🟡', text: `Partial match — you share some overlap but key technical terms are missing. A targeted rewrite of bullets can meaningfully raise this score.` });
+      } else if (score < 70) {
+        rows.push({ icon: '🟠', text: `Good foundation — you're past the basic threshold but missing specific skills the JD emphasizes. Adding 3–5 targeted bullets could push you above 70%.` });
+      } else {
+        rows.push({ icon: '🟢', text: `Strong match — your profile aligns well. Fine-tune a few missing terms to maximize ATS ranking.` });
+      }
+
+      // Row 2: skills gap
+      if (totalSkills > 0) {
+        const pct = Math.round((matchedCount / totalSkills) * 100);
+        const icon = pct >= 60 ? '✅' : pct >= 30 ? '⚠️' : '❌';
+        rows.push({ icon, text: `Skills coverage: ${matchedCount} of ${totalSkills} required skills found in your resume (${pct}%). Skills account for 60% of your total score — this is the biggest lever.` });
+      }
+
+      // Row 3: content similarity
+      const cIcon = contentPct >= 50 ? '✅' : contentPct >= 25 ? '⚠️' : '❌';
+      rows.push({ icon: cIcon, text: `Content similarity: ${contentPct}% — how closely your resume language mirrors the JD's wording. ATS systems reward using the exact terms from the JD, not synonyms.` });
+
+      // Row 4: section-specific weakness
+      const sumPct = parseInt(document.getElementById('pct-sum').textContent) || 0;
+      const expPct = parseInt(document.getElementById('pct-exp').textContent) || 0;
+      const weakSection = expPct < sumPct ? 'Experience' : 'Summary';
+      const weakPct = Math.min(expPct, sumPct);
+      if (weakPct < 30) {
+        rows.push({ icon: '⚠️', text: `Your ${weakSection} section covers only ${weakPct}% of JD keywords — this is your biggest area to improve. Add the "Experience Bullet" from suggestions below.` });
+      }
+
+      // Row 5: missing skills list
+      if (r.missingSkills.length > 0) {
+        const top = r.missingSkills.slice(0, 5).join(', ');
+        rows.push({ icon: '📋', text: `Top missing skills (add these first): ${top}. Each one could add 1–5% to your score.` });
+      }
+
+      const focusHtml = focus
+        ? `<div class="explain-focus">JD domain focus detected: <strong>${focus.name}</strong> — make sure your summary and bullets clearly demonstrate work in this area.</div>`
+        : '';
+
+      el.innerHTML = `
+        <div class="score-explain-title">Why is your score ${score}%?</div>
+        ${rows.map(r => `<div class="explain-row"><span class="explain-icon">${r.icon}</span><span>${r.text}</span></div>`).join('')}
+        ${focusHtml}`;
     }
 
     // ---- Sentence generators ----
@@ -682,8 +781,9 @@
     }
 
     // ---- Inject sentence into docx section ----
-    function injectSectionParagraph(xml, sentence, sectionType) {
-      const run = `<w:r><w:rPr><w:highlight w:val="yellow"/></w:rPr><w:t xml:space="preserve">${escXml(sentence)}</w:t></w:r>`;
+    function injectSectionParagraph(xml, sentence, sectionType, withHighlight = true) {
+      const rPr = withHighlight ? '<w:rPr><w:highlight w:val="yellow"/></w:rPr>' : '';
+      const run = `<w:r>${rPr}<w:t xml:space="preserve">${escXml(sentence)}</w:t></w:r>`;
       const para = `<w:p>${run}</w:p>`;
 
       const patterns = {
@@ -692,37 +792,55 @@
       };
       const pattern = patterns[sectionType];
 
+      // Only exit a section when we hit one of these clearly-different section headings.
+      // Deliberately narrow so company names / role titles don't cause early exit.
+      const sectionBoundary = /^(education|academic|degree|certification|skills?|technical skills?|competencies|technologies?|projects?|publications?|awards?|references?|interests?|volunteer)/i;
+
       let insertPos = -1;
       let s = 0;
       let inSection = false;
 
       while (s < xml.length) {
-        const pEnd = xml.indexOf('</w:p>', s);
+        const pStart = xml.indexOf('<w:p', s);
+        if (pStart === -1) break;
+        const pEnd = xml.indexOf('</w:p>', pStart);
         if (pEnd === -1) break;
-        const seg = xml.slice(s, pEnd);
-        const texts = (seg.match(/<w:t[^>]*>([^<]+)<\/w:t>/g) || []).map(m => m.replace(/<[^>]+>/g, '')).join('').trim();
+        const endPos = pEnd + 6;
+
+        const seg = xml.slice(pStart, pEnd);
+        const texts = (seg.match(/<w:t[^>]*>([^<]+)<\/w:t>/g) || [])
+          .map(m => m.replace(/<[^>]+>/g, '')).join('').trim();
         const isBold = /<w:b[ \/>]|<w:b>/.test(seg);
-        const isAllCaps = texts.length < 60 && texts === texts.toUpperCase() && /[A-Z]/.test(texts);
+        const isAllCaps = texts.length > 2 && texts.length < 60 && texts === texts.toUpperCase() && /[A-Z]/.test(texts);
         const isHeadingStyle = /<w:pStyle w:val="[^"]*[Hh]eading/.test(seg);
-        const isHeading = isHeadingStyle || (isBold && isAllCaps) || (isAllCaps && texts.length > 2 && texts.length < 40);
+        const isHeading = isHeadingStyle || (isBold && isAllCaps);
 
         if (!inSection) {
-          if (isHeading && pattern && pattern.test(texts)) { inSection = true; insertPos = pEnd + 6; }
+          if (isHeading && pattern && pattern.test(texts)) {
+            inSection = true;
+            insertPos = endPos; // default: right after heading (empty section fallback)
+          }
         } else {
-          if (isHeading) break; // next section started — stop here
-          insertPos = pEnd + 6;
+          // Only break when we clearly hit a DIFFERENT section — not just any bold/caps text.
+          // This prevents company names ("GOOGLE INC.") from causing early exit.
+          if (isHeading && texts.length < 50 && sectionBoundary.test(texts) && !pattern.test(texts)) break;
+          insertPos = endPos; // keep tracking end of last paragraph in this section
         }
-        s = pEnd + 6;
+        s = endPos;
       }
 
-      if (insertPos < 0) { const last = xml.lastIndexOf('</w:p>'); insertPos = last >= 0 ? last + 6 : xml.length; }
+      if (insertPos < 0) {
+        const last = xml.lastIndexOf('</w:p>');
+        insertPos = last >= 0 ? last + 6 : xml.length;
+      }
       return xml.slice(0, insertPos) + para + xml.slice(insertPos);
     }
 
+    // addedSentences tracks {sentence, sectionType} so download can re-inject without highlight
     let addedSentences = [];
 
     async function addSentenceToDoc(sentence, sectionType, btn) {
-      if (addedSentences.includes(sentence)) return;
+      if (addedSentences.some(s => s.sentence === sentence)) return;
       if (!isDocx) { alert('Upload a .docx resume to add this sentence directly.'); return; }
       setLoading(true);
       try {
@@ -732,7 +850,7 @@
         currentDocBytes = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
         await renderDoc(currentDocBytes.slice(0));
         resumeText += ' ' + sentence;
-        addedSentences.push(sentence);
+        addedSentences.push({ sentence, sectionType });
         if (btn) { btn.textContent = '✓ Added to preview'; btn.disabled = true; }
         if (currentJD) analyze();
       } catch (e) { console.warn('Sentence inject failed:', e); alert('Could not add: ' + e.message); }
@@ -808,14 +926,19 @@
       if (!originalBytes) { alert('Upload a resume first.'); return; }
       setLoading(true);
       try {
-        // Rebuild from original bytes WITHOUT yellow highlight — clean resume
+        // Rebuild from original bytes WITHOUT yellow highlight — clean download
         let dlBuf = originalBytes.slice(0);
-        if (addedSkills.length > 0 && isDocx) {
+        const hasChanges = (addedSkills.length > 0 || addedSentences.length > 0) && isDocx;
+        if (hasChanges) {
           const zip = await JSZip.loadAsync(dlBuf);
           let xml = await zip.file('word/document.xml').async('string');
-          // Inject each skill with withHighlight=false so no yellow formatting
+          // Re-inject skills without highlight
           for (const skill of addedSkills) {
             xml = injectSkillIntoXml(xml, skill, false);
+          }
+          // Re-inject experience/summary sentences without highlight
+          for (const { sentence, sectionType } of addedSentences) {
+            xml = injectSectionParagraph(xml, sentence, sectionType, false);
           }
           zip.file('word/document.xml', xml);
           dlBuf = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
