@@ -159,6 +159,7 @@
       background: var(--surface-2); color: var(--muted);
       border: 1px solid var(--border); cursor: default; filter: none;
     }
+    .btn-add-sentence { background: var(--accent); }
 
     /* Result section headers */
     .result-section { margin-top: 22px; }
@@ -222,13 +223,23 @@
   </style>
 </head>
 <body>
+  <script>
+    (function() { if (!localStorage.getItem('jh_auth')) window.location.replace('login.html'); })();
+  </script>
   <nav class="nav">
     <div class="nav-inner">
       <a href="index.html" class="nav-brand"><span class="dot"></span>Job Hub</a>
       <div class="nav-links">
         <a href="index.html">About</a>
         <a href="jobs.html">Jobs</a>
-        <a href="matcher.html">Matcher</a>
+        <a href="matcher.html" class="active">Matcher</a>
+      </div>
+      <div class="nav-right">
+        <div class="nav-user">
+          <div class="nav-user-avatar" id="nav-avatar">SD</div>
+          <span id="nav-email"></span>
+        </div>
+        <button type="button" class="nav-logout" id="nav-logout">Sign out</button>
       </div>
     </div>
   </nav>
@@ -344,6 +355,15 @@
   <script type="module">
     import { loadSkills, escapeHtml, scoreClass, markActiveNav } from './js/common.js';
     import { matchResumeToJD } from './js/matcher.js';
+
+    // Auth UI
+    const auth = JSON.parse(localStorage.getItem('jh_auth') || '{}');
+    document.getElementById('nav-avatar').textContent = auth.initials || 'SD';
+    document.getElementById('nav-email').textContent = auth.email || '';
+    document.getElementById('nav-logout').addEventListener('click', () => {
+      localStorage.removeItem('jh_auth');
+      window.location.replace('login.html');
+    });
 
     markActiveNav();
 
@@ -630,13 +650,20 @@
                    <button type="button" class="btn-copy-sentence" data-idx="${idx}" data-text="${escapeHtml(it.sentence)}">
                      📋 Copy sentence
                    </button>
+                   <button type="button" class="btn-add-skill btn-add-sentence" data-sentence="${escapeHtml(it.sentence)}" data-section="${it.type}">
+                     + Add to docx preview
+                   </button>
                  </div>`
             }
           </div>`;
       }).join('');
 
       container.querySelectorAll('.btn-add-skill:not([disabled])').forEach(btn => {
-        btn.addEventListener('click', () => addSkill(btn.dataset.skill));
+        if (btn.dataset.skill) {
+          btn.addEventListener('click', () => addSkill(btn.dataset.skill));
+        } else if (btn.dataset.sentence) {
+          btn.addEventListener('click', () => addSentenceToDoc(btn.dataset.sentence, btn.dataset.section, btn));
+        }
       });
 
       container.querySelectorAll('.btn-copy-sentence').forEach(btn => {
@@ -652,6 +679,64 @@
           }
         });
       });
+    }
+
+    // ---- Inject sentence into docx section ----
+    function injectSectionParagraph(xml, sentence, sectionType) {
+      const run = `<w:r><w:rPr><w:highlight w:val="yellow"/></w:rPr><w:t xml:space="preserve">${escXml(sentence)}</w:t></w:r>`;
+      const para = `<w:p>${run}</w:p>`;
+
+      const patterns = {
+        experience: /experience|employment|work history|career|professional/i,
+        summary:    /summary|objective|profile|about/i
+      };
+      const pattern = patterns[sectionType];
+
+      let insertPos = -1;
+      let s = 0;
+      let inSection = false;
+
+      while (s < xml.length) {
+        const pEnd = xml.indexOf('</w:p>', s);
+        if (pEnd === -1) break;
+        const seg = xml.slice(s, pEnd);
+        const texts = (seg.match(/<w:t[^>]*>([^<]+)<\/w:t>/g) || []).map(m => m.replace(/<[^>]+>/g, '')).join('').trim();
+        const isBold = /<w:b[ \/>]|<w:b>/.test(seg);
+        const isAllCaps = texts.length < 60 && texts === texts.toUpperCase() && /[A-Z]/.test(texts);
+        const isHeadingStyle = /<w:pStyle w:val="[^"]*[Hh]eading/.test(seg);
+        const isHeading = isHeadingStyle || (isBold && isAllCaps) || (isAllCaps && texts.length > 2 && texts.length < 40);
+
+        if (!inSection) {
+          if (isHeading && pattern && pattern.test(texts)) { inSection = true; insertPos = pEnd + 6; }
+        } else {
+          if (isHeading) break; // next section started — stop here
+          insertPos = pEnd + 6;
+        }
+        s = pEnd + 6;
+      }
+
+      if (insertPos < 0) { const last = xml.lastIndexOf('</w:p>'); insertPos = last >= 0 ? last + 6 : xml.length; }
+      return xml.slice(0, insertPos) + para + xml.slice(insertPos);
+    }
+
+    let addedSentences = [];
+
+    async function addSentenceToDoc(sentence, sectionType, btn) {
+      if (addedSentences.includes(sentence)) return;
+      if (!isDocx) { alert('Upload a .docx resume to add this sentence directly.'); return; }
+      setLoading(true);
+      try {
+        const zip = await JSZip.loadAsync(currentDocBytes.slice(0));
+        const xml = await zip.file('word/document.xml').async('string');
+        zip.file('word/document.xml', injectSectionParagraph(xml, sentence, sectionType));
+        currentDocBytes = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
+        await renderDoc(currentDocBytes.slice(0));
+        resumeText += ' ' + sentence;
+        addedSentences.push(sentence);
+        if (btn) { btn.textContent = '✓ Added to preview'; btn.disabled = true; }
+        if (currentJD) analyze();
+      } catch (e) { console.warn('Sentence inject failed:', e); alert('Could not add: ' + e.message); }
+      setLoading(false);
     }
 
     // ---- Add skill to docx XML ----

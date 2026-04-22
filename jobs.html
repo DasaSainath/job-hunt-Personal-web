@@ -3,124 +3,345 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jobs Dashboard</title>
+  <title>Jobs Dashboard — JobHub</title>
   <link rel="stylesheet" href="css/styles.css" />
   <style>
-    /* Jobs hero banner */
-    .jobs-hero {
-      position: relative; overflow: hidden;
-      background: linear-gradient(135deg, #0f1115 0%, #0d1f35 40%, #0f2a1e 70%, #1a0f2a 100%);
-      background-size: 400% 400%;
-      animation: heroShift 16s ease infinite;
-      padding: 36px 0 28px;
+    /* ---- Page header ---- */
+    .page-header {
+      background: var(--surface);
       border-bottom: 1px solid var(--border);
+      padding: 28px 0 20px;
     }
-    @keyframes heroShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+    .page-header-inner {
+      max-width: 1200px; margin: 0 auto; padding: 0 24px;
+      display: flex; align-items: flex-end; gap: 20px; justify-content: space-between; flex-wrap: wrap;
     }
-    .jobs-hero::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse at 20% 50%, rgba(110,168,254,0.08) 0%, transparent 60%),
-                  radial-gradient(ellipse at 80% 20%, rgba(123,227,181,0.06) 0%, transparent 50%);
-      pointer-events: none;
+    .page-header h1 {
+      margin: 0 0 4px; font-size: 1.65rem; font-weight: 800;
+      letter-spacing: -0.02em; color: var(--text);
     }
-    .jobs-hero-inner {
-      max-width: 1100px; margin: 0 auto; padding: 0 24px;
-      position: relative; z-index: 1;
-    }
-    .jobs-hero h1 { margin: 0 0 6px; font-size: 2rem; letter-spacing: -0.02em; }
-    .jobs-hero p { margin: 0 0 20px; color: var(--muted); }
+    .page-header p { margin: 0; color: var(--muted); font-size: 0.9rem; }
 
-    /* Live search bar */
-    .live-search-bar {
-      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    /* ---- Search + filter bar ---- */
+    .search-bar-row {
+      max-width: 1200px; margin: 0 auto; padding: 16px 24px;
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
     }
-    .live-search-input {
-      flex: 1; min-width: 260px; max-width: 500px;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: var(--radius-sm);
-      color: #fff; padding: 11px 16px;
-      font: inherit; font-size: 0.95rem;
-      -webkit-backdrop-filter: blur(4px);
-      backdrop-filter: blur(4px);
-      transition: border-color 0.2s, background 0.2s;
+    .search-main {
+      flex: 1; min-width: 240px; max-width: 420px;
+      padding: 9px 14px; border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); font: inherit; font-size: 0.93rem;
+      color: var(--text); background: var(--surface);
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .live-search-input::placeholder { color: rgba(255,255,255,0.35); }
-    .live-search-input:focus { outline: none; border-color: var(--accent); background: rgba(255,255,255,0.10); }
-    .live-search-input::-webkit-search-cancel-button { display: none; }
-
-    .live-search-btn {
-      padding: 11px 20px; background: var(--accent); color: #fff;
+    .search-main:focus {
+      outline: none; border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.10);
+    }
+    .search-btn {
+      padding: 9px 20px; background: var(--accent); color: #fff;
       border: none; border-radius: var(--radius-sm); font: inherit;
-      font-size: 0.92rem; font-weight: 700; cursor: pointer;
-      transition: filter 0.15s; white-space: nowrap;
+      font-size: 0.88rem; font-weight: 700; cursor: pointer;
+      transition: background 0.15s; white-space: nowrap;
     }
-    .live-search-btn:hover { filter: brightness(1.12); }
-    .live-search-btn:disabled { opacity: 0.6; cursor: default; filter: none; }
+    .search-btn:hover { background: var(--accent-hover); }
+    .search-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    .live-search-sources {
-      font-size: 0.78rem; color: rgba(255,255,255,0.4);
-      margin-top: 8px;
+    .filter-sep { width: 1px; height: 30px; background: var(--border); margin: 0 2px; flex-shrink: 0; }
+
+    .filter-select {
+      padding: 9px 12px; border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); font: inherit; font-size: 0.87rem;
+      color: var(--text); background: var(--surface); cursor: pointer;
+      transition: border-color 0.15s;
     }
-    .live-search-sources span { color: rgba(123,227,181,0.7); }
+    .filter-select:focus { outline: none; border-color: var(--accent); }
 
-    /* Status and loading */
-    .live-status {
-      padding: 10px 0; font-size: 0.85rem; color: var(--muted);
-      display: flex; align-items: center; gap: 8px;
+    .filter-inline-input {
+      padding: 9px 12px; border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); font: inherit; font-size: 0.87rem;
+      color: var(--text); background: var(--surface); width: 160px;
+      transition: border-color 0.15s;
+    }
+    .filter-inline-input:focus { outline: none; border-color: var(--accent); }
+
+    .filter-label { font-size: 0.82rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+
+    .time-chip-row { display: flex; gap: 4px; align-items: center; }
+    .time-chip {
+      padding: 6px 14px; border: 1.5px solid var(--border);
+      border-radius: 999px; font-size: 0.8rem; font-weight: 600;
+      color: var(--muted); background: var(--surface); cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .time-chip.active {
+      border-color: var(--accent); color: var(--accent);
+      background: rgba(124,58,237,0.07);
+    }
+
+    /* ---- Main panel ---- */
+    .main-panel {
+      max-width: 1200px; margin: 0 auto 40px; padding: 0 24px;
+    }
+
+    /* ---- Stat strip ---- */
+    .stat-strip {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 800px) { .stat-strip { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 520px) { .stat-strip { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ---- Status bar ---- */
+    .live-status-bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0 14px; font-size: 0.84rem; color: var(--muted);
     }
     .live-spinner {
       width: 14px; height: 14px; border: 2px solid var(--border);
       border-top-color: var(--accent); border-radius: 50%;
-      animation: spin 0.7s linear infinite; display: none;
+      animation: spin 0.7s linear infinite; display: none; flex-shrink: 0;
     }
     .live-spinner.visible { display: block; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Source badge for live results */
-    .source-badge-live {
-      background: rgba(110,168,254,0.12); border-color: rgba(110,168,254,0.3);
-      color: var(--accent);
+    /* ---- Table ---- */
+    .table-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow);
+      overflow: hidden;
     }
-    .jobs-stat-grid { margin-top: 20px; }
+    .table-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; border-bottom: 1px solid var(--border); gap: 12px; flex-wrap: wrap;
+    }
+    .table-toolbar-left { display: flex; align-items: center; gap: 8px; }
+    .table-count { font-size: 0.82rem; color: var(--muted); }
+    .table-count strong { color: var(--text); }
+
+    .jobs-table-wrap { overflow-x: auto; }
+    .jobs-table {
+      width: 100%; border-collapse: collapse; font-size: 0.875rem;
+    }
+    .jobs-table th {
+      text-align: left; padding: 11px 16px;
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted);
+      background: var(--surface-2); border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .jobs-table th:first-child { border-radius: 0; }
+    .jobs-table td {
+      padding: 13px 16px; border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .jobs-table tbody tr:last-child td { border-bottom: none; }
+    .jobs-table tbody tr:hover td { background: rgba(124,58,237,0.025); }
+    .jobs-table tbody tr.row-applied td { background: rgba(37,99,235,0.025); }
+
+    .col-company { font-weight: 600; color: var(--text); white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+    .col-position a { color: var(--text); font-weight: 500; }
+    .col-position a:hover { color: var(--accent); text-decoration: none; }
+    .col-position .applied-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 0.72rem; font-weight: 600; color: var(--accent-2);
+      background: rgba(37,99,235,0.08); border: 1px solid rgba(37,99,235,0.2);
+      padding: 2px 8px; border-radius: 999px; margin-left: 6px; white-space: nowrap;
+    }
+    .col-location { color: var(--muted); font-size: 0.82rem; white-space: nowrap; }
+    .col-source { }
+    .col-date { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+    .col-match { text-align: center; }
+    .col-actions { white-space: nowrap; text-align: right; }
+
+    /* score pill */
+    .score-pill {
+      display: inline-block; padding: 3px 10px;
+      border-radius: 999px; font-size: 0.78rem; font-weight: 700;
+      min-width: 46px; text-align: center;
+    }
+    .score-pill.high { background: rgba(5,150,105,0.1); color: var(--success); border: 1px solid rgba(5,150,105,0.2); }
+    .score-pill.mid  { background: rgba(217,119,6,0.1);  color: var(--warn);    border: 1px solid rgba(217,119,6,0.2); }
+    .score-pill.low  { background: rgba(220,38,38,0.08); color: var(--danger);  border: 1px solid rgba(220,38,38,0.15); }
+
+    /* source badge */
+    .src-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 4px;
+      font-size: 0.72rem; font-weight: 600;
+      background: var(--surface-2); border: 1px solid var(--border); color: var(--muted);
+    }
+    .src-badge.live { background: rgba(124,58,237,0.07); border-color: rgba(124,58,237,0.2); color: var(--accent); }
+
+    /* action buttons */
+    .btn-open {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 30px; height: 30px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--muted); cursor: pointer; text-decoration: none;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      font-size: 0.85rem;
+    }
+    .btn-open:hover { border-color: var(--accent); color: var(--accent); background: rgba(124,58,237,0.05); text-decoration: none; }
+
+    .btn-mark-applied {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: var(--radius-sm);
+      border: 1.5px solid var(--accent-2); color: var(--accent-2);
+      background: transparent; font: inherit; font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; transition: background 0.15s, color 0.15s; white-space: nowrap;
+    }
+    .btn-mark-applied:hover { background: var(--accent-2); color: #fff; }
+    .btn-applied-state {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: var(--radius-sm);
+      border: 1.5px solid rgba(37,99,235,0.25); color: var(--accent-2);
+      background: rgba(37,99,235,0.07); font: inherit; font-size: 0.8rem; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .btn-applied-state:hover { border-color: var(--danger); color: var(--danger); background: rgba(220,38,38,0.06); }
+
+    .actions-row { display: inline-flex; align-items: center; gap: 6px; }
+
+    /* ---- Empty / error ---- */
+    .table-empty {
+      padding: 48px 24px; text-align: center; color: var(--muted); font-size: 0.9rem;
+    }
+    .table-empty strong { color: var(--text); }
+
+    /* ---- Chip rows in expanded detail ---- */
+    .row-detail td { padding: 0 16px 14px; }
+    .chip-row-sm { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .chip-sm {
+      padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 500;
+    }
+    .chip-sm.matched { background: rgba(5,150,105,0.08); color: var(--success); border: 1px solid rgba(5,150,105,0.2); }
+    .chip-sm.missing { background: rgba(220,38,38,0.06); color: var(--danger); border: 1px solid rgba(220,38,38,0.15); }
+
+    /* ---- Applications log ---- */
+    .apps-section {
+      margin-top: 32px;
+    }
+
+    /* ---- Utility classes replacing inline styles ---- */
+    .search-filter-bar { background: var(--surface); border-bottom: 1px solid var(--border); }
+    .main-panel-top { margin-top: 24px; }
+    .updated-at-label { font-size: 0.78rem; color: var(--muted); }
+    .applied-filter-label { font-size: 0.82rem; color: var(--muted); display: flex; align-items: center; gap: 5px; cursor: pointer; }
+    .live-status-text { color: var(--muted); }
+    .toolbar-sources { display: flex; align-items: center; gap: 8px; }
+    .toolbar-sources-label { font-size: 0.78rem; color: var(--muted); }
+    .pagination-hidden { display: none; }
+    .th-center { text-align: center; }
+    .th-right { text-align: right; }
+    .page-info-text { font-size: 0.82rem; color: var(--muted); }
+
+    /* ---- Pagination ---- */
+    .pagination-hidden { display: none !important; }
+    .pagination {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px; border-top: 1px solid var(--border);
+      font-size: 0.83rem; color: var(--muted);
+    }
+    .page-btns { display: flex; gap: 4px; }
+    .page-btn {
+      padding: 5px 10px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--surface);
+      font: inherit; font-size: 0.82rem; cursor: pointer; color: var(--text);
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .page-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   </style>
 </head>
 <body>
+
+  <!-- Auth guard runs first -->
+  <script>
+    (function() {
+      const auth = localStorage.getItem('jh_auth');
+      if (!auth) { window.location.replace('login.html'); }
+    })();
+  </script>
+
   <nav class="nav">
     <div class="nav-inner">
-      <a href="index.html" class="nav-brand"><span class="dot"></span><span id="brand-name">Portfolio</span></a>
+      <a href="index.html" class="nav-brand">
+        <span class="dot"></span><span id="brand-name">JobHub</span>
+      </a>
       <div class="nav-links">
         <a href="index.html">About</a>
-        <a href="jobs.html">Jobs</a>
+        <a href="jobs.html" class="active">Jobs</a>
         <a href="matcher.html">Matcher</a>
+      </div>
+      <div class="nav-right">
+        <div class="nav-user">
+          <div class="nav-user-avatar" id="nav-avatar">SD</div>
+          <span id="nav-email"></span>
+        </div>
+        <button type="button" class="nav-logout" id="nav-logout">Sign out</button>
       </div>
     </div>
   </nav>
 
-  <!-- Hero with live search -->
-  <div class="jobs-hero">
-    <div class="jobs-hero-inner">
-      <h1>Job Dashboard</h1>
-      <p id="status-line">Search for jobs or browse below — scored against your resume in real time.</p>
-      <div class="live-search-bar">
-        <input type="search" id="live-q" class="live-search-input"
-               placeholder="Search: React Developer, Data Engineer, Python Backend…" />
-        <button type="button" id="live-search-btn" class="live-search-btn">Search Live Jobs</button>
-        <span class="last-updated" id="updated-at"></span>
-      </div>
-      <div class="live-search-sources">
-        Live sources: <span>Remotive</span> · <span>Arbeitnow</span> · <span>Himalayas</span> + cached feed
+  <!-- Page header -->
+  <div class="page-header">
+    <div class="page-header-inner">
+      <div>
+        <h1>Job Dashboard</h1>
+        <p id="status-line">Search roles and score them against your resume in real time.</p>
       </div>
     </div>
   </div>
 
-  <main class="container">
-    <!-- Stat cards -->
-    <div class="stat-grid jobs-stat-grid">
+  <!-- Search + filter bar -->
+  <div class="search-filter-bar">
+    <div class="search-bar-row">
+      <!-- Live search -->
+      <input type="search" id="live-q" class="search-main"
+             placeholder="Search: React Developer, Data Engineer, Python Backend…" />
+      <button type="button" id="live-search-btn" class="search-btn">Search Live</button>
+      <span id="updated-at" class="updated-at-label"></span>
+
+      <div class="filter-sep"></div>
+
+      <!-- Time filter chips -->
+      <div class="time-chip-row">
+        <span class="filter-label">Posted:</span>
+        <button type="button" class="time-chip active" data-hours="0">All</button>
+        <button type="button" class="time-chip" data-hours="24">24h</button>
+        <button type="button" class="time-chip" data-hours="48">48h</button>
+        <button type="button" class="time-chip" data-hours="168">7d</button>
+      </div>
+
+      <div class="filter-sep"></div>
+
+      <!-- Filter inputs -->
+      <input id="q" type="text" class="filter-inline-input" placeholder="Filter title, company…" />
+      <select id="source" class="filter-select" title="Filter by source" aria-label="Filter by source"><option value="">All sources</option></select>
+      <select id="min-score" class="filter-select" title="Minimum match percentage" aria-label="Minimum match percentage">
+        <option value="0" selected>Any match</option>
+        <option value="30">30%+</option>
+        <option value="50">50%+</option>
+        <option value="70">70%+</option>
+      </select>
+      <select id="sort" class="filter-select" title="Sort order" aria-label="Sort order">
+        <option value="match">Best match</option>
+        <option value="date">Newest first</option>
+        <option value="applied">Applied first</option>
+      </select>
+      <label class="applied-filter-label">
+        <input type="checkbox" id="applied-only" /> Applied only
+      </label>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main-panel main-panel-top">
+
+    <!-- Stat strip -->
+    <div class="stat-strip">
       <div class="stat-card accent-blue">
         <div class="stat-number" id="stat-total">—</div>
         <div class="stat-label">Total Jobs</div>
@@ -143,51 +364,48 @@
       </div>
     </div>
 
-    <!-- Filters -->
-    <div class="filters">
-      <span class="time-filter-label">Posted within</span>
-      <div class="time-filter-group">
-        <button type="button" class="time-btn active" data-hours="0">All</button>
-        <button type="button" class="time-btn" data-hours="24">24h</button>
-        <button type="button" class="time-btn" data-hours="48">48h</button>
-        <button type="button" class="time-btn" data-hours="168">7d</button>
-      </div>
-
-      <label for="q">Filter</label>
-      <input id="q" type="text" placeholder="title, company, skill…" />
-
-      <label for="source">Source</label>
-      <select id="source"><option value="">All sources</option></select>
-
-      <label for="min-score">Min match %</label>
-      <select id="min-score">
-        <option value="0">Any</option>
-        <option value="30">30%+</option>
-        <option value="50" selected>50%+</option>
-        <option value="70">70%+</option>
-      </select>
-
-      <label for="sort">Sort</label>
-      <select id="sort">
-        <option value="match">Best match</option>
-        <option value="date">Newest first</option>
-        <option value="applied">Applied first</option>
-      </select>
-
-      <label class="filter-check-label">
-        <input type="checkbox" id="applied-only" /> Applied only
-      </label>
-    </div>
-
-    <div class="live-status" id="live-status">
+    <!-- Status / spinner -->
+    <div class="live-status-bar">
       <div class="live-spinner" id="live-spinner"></div>
-      <span id="live-status-text"></span>
+      <span id="live-status-text" class="live-status-text"></span>
     </div>
 
-    <div id="jobs-list"><div class="loading">Loading jobs…</div></div>
+    <!-- Jobs table card -->
+    <div class="table-card" id="jobs-table-card">
+      <div class="table-toolbar">
+        <div class="table-toolbar-left">
+          <span class="table-count" id="table-count"><strong>—</strong> jobs</span>
+        </div>
+        <div class="toolbar-sources">
+          <span class="toolbar-sources-label">Live sources: Remotive · Arbeitnow · Himalayas</span>
+        </div>
+      </div>
+      <div class="jobs-table-wrap">
+        <table class="jobs-table">
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Position</th>
+              <th>Location</th>
+              <th>Source</th>
+              <th>Date</th>
+              <th class="th-center">Match</th>
+              <th class="th-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="jobs-tbody">
+            <tr><td colspan="7"><div class="table-empty">Loading jobs…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination pagination-hidden" id="pagination-bar">
+        <span id="page-info" class="page-info-text"></span>
+        <div class="page-btns" id="page-btns"></div>
+      </div>
+    </div>
 
     <!-- Applications log -->
-    <section class="apps-log-section">
+    <section class="apps-section">
       <div class="section-header">
         <div class="section-dot section-dot-green"></div>
         <h2>Applications Log</h2>
@@ -195,10 +413,10 @@
         <button type="button" class="btn btn-ghost btn-sm apps-clear-btn" id="clear-apps">Clear Log</button>
       </div>
       <div id="apps-log-body">
-        <p class="muted small">No applications yet — click <strong>Apply →</strong> on any job card to start tracking.</p>
+        <p class="muted small">No applications yet — click <strong>Mark as Applied</strong> on any row to start tracking.</p>
       </div>
     </section>
-  </main>
+  </div>
 
   <footer class="footer">
     Live search via Remotive · Arbeitnow · Himalayas · Cached feed via GitHub Actions
@@ -208,16 +426,28 @@
     import { loadResume, loadAllJobs, loadSkills, resumeToText, escapeHtml, stripHtml, truncate, formatDate, scoreClass, markActiveNav } from './js/common.js';
     import { matchResumeToJD } from './js/matcher.js';
 
+    // ---- Auth ----
+    const authRaw = localStorage.getItem('jh_auth');
+    if (!authRaw) { window.location.replace('login.html'); }
+    const auth = JSON.parse(authRaw || '{}');
+    document.getElementById('nav-avatar').textContent = auth.initials || 'SD';
+    document.getElementById('nav-email').textContent = auth.email || '';
+    document.getElementById('nav-logout').addEventListener('click', () => {
+      localStorage.removeItem('jh_auth');
+      window.location.replace('login.html');
+    });
+
     markActiveNav();
 
     const APPS_KEY = 'jh_applications';
-    const state = { jobs: [], liveJobs: [] };
+    const PAGE_SIZE = 25;
+    const state = { jobs: [], cachedJobs: [], liveJobs: [], filtered: [] };
     let resumeText = '';
     let skills = [];
     let activeHours = 0;
-    let isSearching = false;
+    let currentPage = 1;
 
-    // ---- Live job fetch from public APIs ----
+    // ---- Live job fetch ----
     async function fetchFromRemotive(query) {
       try {
         const url = `https://remotive.com/api/remote-jobs${query ? '?search=' + encodeURIComponent(query) + '&limit=50' : '?limit=100'}`;
@@ -226,17 +456,14 @@
         const d = await r.json();
         return (d.jobs || []).map(j => ({
           id: 'remotive-' + j.id,
-          title: j.title || '',
-          company: j.company_name || '',
+          title: j.title || '', company: j.company_name || '',
           location: j.candidate_required_location || 'Remote',
-          url: j.url || '',
-          source: 'Remotive',
+          url: j.url || '', source: 'Remotive',
           posted: (j.publication_date || '').slice(0, 10),
           description: stripHtml(j.description || '').slice(0, 600),
-          tags: j.tags || [],
-          _live: true
+          tags: j.tags || [], _live: true
         }));
-      } catch (e) { console.warn('Remotive error:', e); return []; }
+      } catch (e) { console.warn('Remotive:', e); return []; }
     }
 
     async function fetchFromArbeitnow(query) {
@@ -250,17 +477,14 @@
           .slice(0, 40)
           .map(j => ({
             id: 'arbeitnow-' + j.slug,
-            title: j.title || '',
-            company: j.company_name || '',
+            title: j.title || '', company: j.company_name || '',
             location: j.location || 'Remote',
-            url: j.url || '',
-            source: 'Arbeitnow',
+            url: j.url || '', source: 'Arbeitnow',
             posted: j.created_at ? new Date(j.created_at * 1000).toISOString().slice(0, 10) : '',
             description: stripHtml(j.description || '').slice(0, 600),
-            tags: j.tags || [],
-            _live: true
+            tags: j.tags || [], _live: true
           }));
-      } catch (e) { console.warn('Arbeitnow error:', e); return []; }
+      } catch (e) { console.warn('Arbeitnow:', e); return []; }
     }
 
     async function fetchFromHimalayas(query) {
@@ -271,62 +495,49 @@
         const d = await r.json();
         return (d.jobs || []).map(j => ({
           id: 'himalayas-' + (j.id || j.slug || Math.random()),
-          title: j.title || '',
-          company: (j.company || {}).name || '',
+          title: j.title || '', company: (j.company || {}).name || '',
           location: j.locationRestrictions || 'Remote',
-          url: j.applicationLink || j.url || '',
-          source: 'Himalayas',
+          url: j.applicationLink || j.url || '', source: 'Himalayas',
           posted: (j.createdAt || '').slice(0, 10),
           description: stripHtml(j.description || '').slice(0, 600),
-          tags: j.skills || [],
-          _live: true
+          tags: j.skills || [], _live: true
         }));
-      } catch (e) { console.warn('Himalayas error:', e); return []; }
+      } catch (e) { console.warn('Himalayas:', e); return []; }
     }
 
     async function searchLiveJobs(query) {
-      setSearching(true, 'Searching live job boards…');
-      try {
-        const [remotive, arbeitnow, himalayas] = await Promise.all([
-          fetchFromRemotive(query),
-          fetchFromArbeitnow(query),
-          fetchFromHimalayas(query)
-        ]);
-        const all = [...remotive, ...arbeitnow, ...himalayas];
-        setSearching(false, `Found ${all.length} live jobs · scoring against your resume…`);
-        return all;
-      } catch (e) {
-        setSearching(false, 'Live search failed — showing cached results');
-        return [];
-      }
+      setStatus(true, 'Searching live job boards…');
+      const [rem, arb, him] = await Promise.all([
+        fetchFromRemotive(query), fetchFromArbeitnow(query), fetchFromHimalayas(query)
+      ]);
+      const all = [...rem, ...arb, ...him];
+      setStatus(false, `Fetched ${all.length} live jobs · scoring…`);
+      return all;
     }
 
-    function setSearching(on, msg) {
-      isSearching = on;
-      document.getElementById('live-spinner').classList.toggle('visible', on);
+    function setStatus(spin, msg) {
+      document.getElementById('live-spinner').classList.toggle('visible', spin);
       document.getElementById('live-status-text').textContent = msg || '';
-      document.getElementById('live-search-btn').disabled = on;
+      document.getElementById('live-search-btn').disabled = spin;
     }
 
-    // ---- Deduplication ----
-    function normalizeStr(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
-
-    function deduplicateJobs(jobs) {
-      const seenUrls = new Set();
-      const seenTitleCo = new Set();
+    // ---- Dedup ----
+    function norm(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+    function dedup(jobs) {
+      const urls = new Set(), tcs = new Set();
       return jobs.filter(j => {
-        const urlKey = (j.url || '').toLowerCase();
-        const tcKey = normalizeStr(j.title) + '|' + normalizeStr(j.company);
-        if (urlKey && seenUrls.has(urlKey)) return false;
-        if (tcKey.length > 2 && seenTitleCo.has(tcKey)) return false;
-        if (urlKey) seenUrls.add(urlKey);
-        if (tcKey.length > 2) seenTitleCo.add(tcKey);
+        const u = (j.url || '').toLowerCase();
+        const k = norm(j.title) + '|' + norm(j.company);
+        if (u && urls.has(u)) return false;
+        if (k.length > 2 && tcs.has(k)) return false;
+        if (u) urls.add(u);
+        if (k.length > 2) tcs.add(k);
         return true;
       });
     }
 
-    function scoreJobs(rawList) {
-      return rawList.map(j => {
+    function scoreJobs(list) {
+      return list.map(j => {
         if (!resumeText) return { ...j, matchScore: 0, matchedSkills: [], missingSkills: [] };
         const m = matchResumeToJD([j.title, j.description].filter(Boolean).join('\n'), resumeText, skills);
         return { ...j, matchScore: m.score, matchedSkills: m.matchedSkills, missingSkills: m.missingSkills };
@@ -334,11 +545,10 @@
     }
 
     function mergeAndScore(cached, live) {
-      const all = [...live, ...cached]; // live first to prefer live results
-      const deduped = deduplicateJobs(all);
-      return scoreJobs(deduped);
+      return scoreJobs(dedup([...live, ...cached]));
     }
 
+    // ---- Stats ----
     function rebuildStats(jobs) {
       const today = new Date().toDateString();
       document.getElementById('stat-total').textContent = jobs.length;
@@ -346,22 +556,19 @@
       document.getElementById('stat-mid').textContent = jobs.filter(j => j.matchScore >= 50 && j.matchScore < 70).length;
       document.getElementById('stat-new').textContent = jobs.filter(j => j.posted && new Date(j.posted).toDateString() === today).length;
 
-      const srcSel = document.getElementById('source');
-      const current = srcSel.value;
-      srcSel.innerHTML = '<option value="">All sources</option>';
-      const sources = [...new Set(jobs.map(j => j.source).filter(Boolean))].sort();
-      sources.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; if (s === current) o.selected = true; srcSel.appendChild(o); });
+      const sel = document.getElementById('source');
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">All sources</option>';
+      [...new Set(jobs.map(j => j.source).filter(Boolean))].sort().forEach(s => {
+        const o = document.createElement('option'); o.value = s; o.textContent = s;
+        if (s === cur) o.selected = true; sel.appendChild(o);
+      });
     }
 
-    // ---- Application storage ----
-    function getApps() {
-      try { return JSON.parse(localStorage.getItem(APPS_KEY) || '[]'); } catch { return []; }
-    }
+    // ---- Apps storage ----
+    function getApps() { try { return JSON.parse(localStorage.getItem(APPS_KEY) || '[]'); } catch { return []; } }
     function isApplied(url) { return getApps().some(a => a.url === url); }
-    function getAppliedDate(url) {
-      const a = getApps().find(a => a.url === url);
-      return a ? new Date(a.appliedAt).toLocaleDateString() : '';
-    }
+    function getAppliedDate(url) { const a = getApps().find(a => a.url === url); return a ? new Date(a.appliedAt).toLocaleDateString() : ''; }
 
     function applyJob(job) {
       const apps = getApps();
@@ -369,7 +576,6 @@
         apps.unshift({ url: job.url, title: job.title, company: job.company, source: job.source, matchScore: job.matchScore, appliedAt: new Date().toISOString() });
         localStorage.setItem(APPS_KEY, JSON.stringify(apps.slice(0, 300)));
       }
-      window.open(job.url, '_blank', 'noopener,noreferrer');
       updateAppliedStat();
       render();
       renderAppsLog();
@@ -389,11 +595,12 @@
     }
 
     // ---- Time filter ----
-    document.querySelectorAll('.time-btn').forEach(btn => {
+    document.querySelectorAll('.time-chip').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.time-chip').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         activeHours = parseInt(btn.dataset.hours, 10);
+        currentPage = 1;
         render();
       });
     });
@@ -401,12 +608,16 @@
     function withinWindow(postedStr) {
       if (!activeHours) return true;
       if (!postedStr) return false;
-      const posted = new Date(postedStr);
-      const cutoff = new Date(Date.now() - activeHours * 3600000);
-      return posted >= cutoff;
+      return new Date(postedStr) >= new Date(Date.now() - activeHours * 3600000);
     }
 
-    // ---- Render ----
+    // ---- Score pill helper ----
+    function scorePill(score) {
+      const cls = score >= 70 ? 'high' : score >= 50 ? 'mid' : 'low';
+      return `<span class="score-pill ${cls}">${score}%</span>`;
+    }
+
+    // ---- Render table ----
     function render() {
       const q = document.getElementById('q').value.trim().toLowerCase();
       const srcFilter = document.getElementById('source').value;
@@ -420,7 +631,7 @@
         if (j.matchScore < minScore) return false;
         if (appliedOnly && !isApplied(j.url)) return false;
         if (q) {
-          const hay = `${j.title} ${j.company} ${j.location} ${(j.matchedSkills||[]).join(' ')}`.toLowerCase();
+          const hay = `${j.title} ${j.company} ${j.location} ${(j.matchedSkills || []).join(' ')}`.toLowerCase();
           if (!hay.includes(q)) return false;
         }
         return true;
@@ -428,61 +639,90 @@
 
       if (sort === 'match') list.sort((a, b) => b.matchScore - a.matchScore);
       else if (sort === 'date') list.sort((a, b) => new Date(b.posted || 0) - new Date(a.posted || 0));
-      else if (sort === 'applied') list.sort((a, b) => isApplied(b.url) - isApplied(a.url));
+      else if (sort === 'applied') list.sort((a, b) => (isApplied(b.url) ? 1 : 0) - (isApplied(a.url) ? 1 : 0));
 
-      const container = document.getElementById('jobs-list');
-      if (list.length === 0) {
-        const msg = activeHours
-          ? `No jobs found in the last ${activeHours}h. Try a wider time window, lower match %, or search for a specific role above.`
-          : 'No jobs match these filters. Try lowering the minimum match % or search for a job role above.';
-        container.innerHTML = `<div class="empty">${msg}</div>`;
+      state.filtered = list;
+
+      const total = list.length;
+      const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+      if (currentPage > totalPages) currentPage = 1;
+      const page = list.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+      document.getElementById('table-count').innerHTML = `<strong>${total}</strong> jobs${total !== state.jobs.length ? ` (of ${state.jobs.length})` : ''}`;
+
+      const tbody = document.getElementById('jobs-tbody');
+      if (total === 0) {
+        const hidden = state.jobs.length;
+        tbody.innerHTML = `<tr><td colspan="7"><div class="table-empty">
+          No jobs match your current filters.<br/>
+          ${hidden > 0 ? `<strong>${hidden} jobs</strong> exist — try setting match % to "Any" or clearing filters.` : 'Try searching for a specific role using the search bar above.'}
+        </div></td></tr>`;
+        document.getElementById('pagination-bar').style.display = 'none';
         return;
       }
 
-      container.innerHTML = list.map(j => {
+      tbody.innerHTML = page.map(j => {
         const applied = isApplied(j.url);
-        const liveTag = j._live ? `<span class="source-badge source-badge-live">● Live</span>` : '';
+        const liveBadge = j._live ? ` <span class="src-badge live">Live</span>` : '';
+        const appliedBadge = applied ? `<span class="applied-badge">✓ Applied ${escapeHtml(getAppliedDate(j.url))}</span>` : '';
+        const actionBtn = applied
+          ? `<button type="button" class="btn-applied-state btn-undo-apply" data-url="${escapeHtml(j.url)}" title="Click to undo">✓ Applied</button>`
+          : `<button type="button" class="btn-mark-applied btn-track-apply"
+               data-url="${escapeHtml(j.url)}"
+               data-title="${escapeHtml(j.title || '')}"
+               data-company="${escapeHtml(j.company || '')}"
+               data-source="${escapeHtml(j.source || '')}"
+               data-score="${j.matchScore}">Mark as Applied</button>`;
         return `
-          <div class="job-card ${applied ? 'job-card-applied' : ''}">
-            <div class="job-head">
-              <div class="job-card-body">
-                <h3 class="job-title">
-                  <a href="${escapeHtml(j.url || '#')}" target="_blank" rel="noopener">${escapeHtml(j.title || '(untitled)')}</a>
-                </h3>
-                <p class="job-meta">
-                  ${escapeHtml(j.company || '')}
-                  ${j.location ? ' · ' + escapeHtml(j.location) : ''}
-                  <span class="source-badge">${escapeHtml(j.source || '')}</span>
-                  ${liveTag}
-                  ${j.posted ? '<span class="small muted"> · ' + escapeHtml(formatDate(j.posted)) + '</span>' : ''}
-                  ${applied ? `<span class="applied-date-badge">✓ Applied ${escapeHtml(getAppliedDate(j.url))}</span>` : ''}
-                </p>
-                <div class="chip-row">
-                  ${(j.matchedSkills || []).slice(0, 6).map(s => `<span class="chip matched">${escapeHtml(s)}</span>`).join('')}
-                  ${(j.missingSkills || []).slice(0, 4).map(s => `<span class="chip missing">${escapeHtml(s)}</span>`).join('')}
-                </div>
-                <p class="job-desc">${escapeHtml(truncate(stripHtml(j.description || ''), 360))}</p>
-                <div class="job-actions">
-                  ${applied
-                    ? `<span class="btn-applied">✓ Applied</span>
-                       <button type="button" class="btn btn-ghost btn-sm btn-undo-apply" data-url="${escapeHtml(j.url)}">Undo</button>`
-                    : `<button type="button" class="btn-apply btn-track-apply"
-                         data-url="${escapeHtml(j.url)}"
-                         data-title="${escapeHtml(j.title || '')}"
-                         data-company="${escapeHtml(j.company || '')}"
-                         data-source="${escapeHtml(j.source || '')}"
-                         data-score="${j.matchScore}">Apply →</button>`}
-                  <a class="btn btn-ghost btn-sm" href="matcher.html">Check Match</a>
-                </div>
+          <tr class="${applied ? 'row-applied' : ''}" data-id="${escapeHtml(j.id || '')}">
+            <td class="col-company" title="${escapeHtml(j.company || '')}">${escapeHtml(j.company || '—')}</td>
+            <td class="col-position">
+              <a href="${escapeHtml(j.url || '#')}" target="_blank" rel="noopener">${escapeHtml(j.title || '(untitled)')}</a>
+              ${appliedBadge}
+            </td>
+            <td class="col-location">${escapeHtml(j.location || '—')}</td>
+            <td class="col-source"><span class="src-badge">${escapeHtml(j.source || '')}</span>${liveBadge}</td>
+            <td class="col-date">${j.posted ? escapeHtml(formatDate(j.posted)) : '—'}</td>
+            <td class="col-match">${scorePill(j.matchScore)}</td>
+            <td class="col-actions">
+              <div class="actions-row">
+                <a class="btn-open" href="${escapeHtml(j.url || '#')}" target="_blank" rel="noopener" title="Open job listing">↗</a>
+                ${actionBtn}
               </div>
-              <div class="score ${scoreClass(j.matchScore)}">${j.matchScore}%</div>
-            </div>
-          </div>`;
+            </td>
+          </tr>`;
       }).join('');
 
-      container.onclick = e => {
+      // Pagination
+      const pbar = document.getElementById('pagination-bar');
+      if (totalPages <= 1) {
+        pbar.classList.add('pagination-hidden');
+      } else {
+        pbar.classList.remove('pagination-hidden');
+        document.getElementById('page-info').textContent =
+          `Showing ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, total)} of ${total}`;
+        const btns = document.getElementById('page-btns');
+        btns.innerHTML = '';
+        const makeBtn = (label, page, disabled) => {
+          const b = document.createElement('button');
+          b.className = 'page-btn' + (page === currentPage ? ' active' : '');
+          b.textContent = label; b.disabled = disabled;
+          if (!disabled) b.addEventListener('click', () => { currentPage = page; render(); document.getElementById('jobs-table-card').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+          return b;
+        };
+        btns.appendChild(makeBtn('←', currentPage - 1, currentPage === 1));
+        const start = Math.max(1, currentPage - 2), end = Math.min(totalPages, currentPage + 2);
+        for (let p = start; p <= end; p++) btns.appendChild(makeBtn(p, p, false));
+        btns.appendChild(makeBtn('→', currentPage + 1, currentPage === totalPages));
+      }
+
+      // Event delegation
+      tbody.onclick = e => {
         const applyBtn = e.target.closest('.btn-track-apply');
-        if (applyBtn) { applyJob({ url: applyBtn.dataset.url, title: applyBtn.dataset.title, company: applyBtn.dataset.company, source: applyBtn.dataset.source, matchScore: parseInt(applyBtn.dataset.score, 10) }); return; }
+        if (applyBtn) {
+          applyJob({ url: applyBtn.dataset.url, title: applyBtn.dataset.title, company: applyBtn.dataset.company, source: applyBtn.dataset.source, matchScore: parseInt(applyBtn.dataset.score, 10) });
+          return;
+        }
         const undoBtn = e.target.closest('.btn-undo-apply');
         if (undoBtn) removeApp(undoBtn.dataset.url);
       };
@@ -490,56 +730,63 @@
 
     // ---- Applications log ----
     function renderAppsLog() {
-      const apps = getApps();
+      const cutoff = Date.now() - 34 * 86400000;
+      const apps = getApps().filter(a => new Date(a.appliedAt).getTime() > cutoff);
       const countEl = document.getElementById('apps-count');
       const el = document.getElementById('apps-log-body');
       if (!apps.length) {
         countEl.textContent = '';
-        el.innerHTML = '<p class="muted small">No applications yet — click <strong>Apply →</strong> on any job card to start tracking.</p>';
+        el.innerHTML = '<p class="muted small">No applications in the last 34 days.</p>';
         return;
       }
       const today = new Date().toDateString();
-      const todayCount = apps.filter(a => new Date(a.appliedAt).toDateString() === today).length;
-      countEl.textContent = `${apps.length} total · ${todayCount} today`;
-
+      countEl.textContent = `${apps.length} in last 34 days · ${apps.filter(a => new Date(a.appliedAt).toDateString() === today).length} today`;
       const byDate = {};
-      apps.forEach(a => { const d = new Date(a.appliedAt).toDateString(); if (!byDate[d]) byDate[d] = []; byDate[d].push(a); });
-
+      apps.forEach(a => { const d = new Date(a.appliedAt).toDateString(); (byDate[d] = byDate[d] || []).push(a); });
       el.innerHTML = Object.entries(byDate).map(([day, entries]) => `
         <div class="apps-day-group">
-          <div class="apps-day-label">${day === today ? 'Today' : day} <span class="muted small">(${entries.length} applied)</span></div>
+          <div class="apps-day-label">${day === today ? 'Today' : day} <span class="muted small">(${entries.length})</span></div>
           <table class="apps-table">
             <thead><tr><th>Job Title</th><th>Company</th><th>Source</th><th>Match</th><th>Time</th><th></th></tr></thead>
             <tbody>
-              ${entries.map(a => `
-                <tr>
-                  <td><a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">${escapeHtml(a.title || '—')}</a></td>
-                  <td class="muted small">${escapeHtml(a.company || '—')}</td>
-                  <td><span class="source-badge">${escapeHtml(a.source || '—')}</span></td>
-                  <td class="${scoreClass(a.matchScore || 0)}">${a.matchScore || 0}%</td>
-                  <td class="muted small">${new Date(a.appliedAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
-                  <td><button type="button" class="btn-remove-app" data-url="${escapeHtml(a.url)}">Remove</button></td>
-                </tr>`).join('')}
+              ${entries.map(a => `<tr>
+                <td><a href="${escapeHtml(a.url)}" target="_blank" rel="noopener">${escapeHtml(a.title || '—')}</a></td>
+                <td class="muted small">${escapeHtml(a.company || '—')}</td>
+                <td><span class="src-badge">${escapeHtml(a.source || '—')}</span></td>
+                <td class="${scoreClass(a.matchScore || 0)}">${a.matchScore || 0}%</td>
+                <td class="muted small">${new Date(a.appliedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                <td><button type="button" class="btn-remove-app" data-url="${escapeHtml(a.url)}">Remove</button></td>
+              </tr>`).join('')}
             </tbody>
           </table>
         </div>`).join('');
-
       el.querySelectorAll('.btn-remove-app').forEach(btn => btn.addEventListener('click', () => removeApp(btn.dataset.url)));
     }
 
     // ---- Live search handler ----
-    document.getElementById('live-search-btn').addEventListener('click', async () => {
+    async function runSearch() {
       const query = document.getElementById('live-q').value.trim();
+      document.getElementById('min-score').value = '0';
+      currentPage = 1;
       const liveResults = await searchLiveJobs(query);
       state.liveJobs = liveResults;
       state.jobs = mergeAndScore(state.cachedJobs || [], liveResults);
       rebuildStats(state.jobs);
-      setSearching(false, `${state.jobs.length} jobs found (${liveResults.length} live · ${(state.cachedJobs||[]).length} cached)`);
+      setStatus(false, `${liveResults.length} live jobs · ${state.jobs.length} total · scored against your resume`);
       render();
-    });
+    }
 
+    document.getElementById('live-search-btn').addEventListener('click', runSearch);
+
+    let searchTimeout = null;
+    document.getElementById('live-q').addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      const q = document.getElementById('live-q').value.trim();
+      if (q.length < 2) return;
+      searchTimeout = setTimeout(runSearch, 700);
+    });
     document.getElementById('live-q').addEventListener('keydown', e => {
-      if (e.key === 'Enter') document.getElementById('live-search-btn').click();
+      if (e.key === 'Enter') { clearTimeout(searchTimeout); runSearch(); }
     });
 
     // ---- Init ----
@@ -551,24 +798,19 @@
           loadSkills().catch(() => ({ skills: [] }))
         ]);
 
-        document.getElementById('brand-name').textContent = resume.name || 'Portfolio';
+        document.getElementById('brand-name').textContent = resume.name || 'JobHub';
         skills = Array.isArray(skillData) ? skillData : (skillData.skills || []);
 
-        // Build resume text for scoring
         const parts = [resume.title || '', resume.tagline || '', resume.summary || ''];
         Object.values(resume.skills || {}).forEach(arr => { if (Array.isArray(arr)) parts.push(arr.join(' ')); });
         (resume.experience || []).forEach(e => { parts.push(e.role || '', e.company || ''); (e.bullets || []).forEach(b => parts.push(b)); });
         resumeText = parts.join(' ');
 
-        document.getElementById('updated-at').textContent = feed.updated_at ? `Cache: ${feed.updated_at}` : '';
+        if (feed.updated_at) document.getElementById('updated-at').textContent = `Cache: ${feed.updated_at}`;
 
-        // Score cached jobs
-        const cachedRaw = (feed.jobs || []);
-        state.cachedJobs = scoreJobs(cachedRaw);
+        state.cachedJobs = scoreJobs(feed.jobs || []);
+        setStatus(true, 'Loading live jobs from Remotive, Arbeitnow, Himalayas…');
 
-        setSearching(true, 'Loading live jobs from Remotive, Arbeitnow, Himalayas…');
-
-        // Fetch live jobs immediately on load (no query = general listing)
         const liveResults = await Promise.all([
           fetchFromRemotive('software engineer'),
           fetchFromArbeitnow(''),
@@ -577,13 +819,14 @@
 
         state.liveJobs = liveResults;
         state.jobs = mergeAndScore(state.cachedJobs, liveResults);
-
         rebuildStats(state.jobs);
-        setSearching(false, `${state.jobs.length} jobs · scored against your resume`);
-        document.getElementById('status-line').textContent = `${state.jobs.length} jobs scored against your resume · search by role for specific results`;
+        setStatus(false, `${state.jobs.length} jobs loaded · scored against your resume`);
+        document.getElementById('status-line').textContent = `${state.jobs.length} jobs scored against your resume · search a role for specific results`;
 
-        ['q', 'source', 'min-score', 'sort', 'applied-only'].forEach(id => document.getElementById(id).addEventListener('change', render));
-        document.getElementById('q').addEventListener('input', render);
+        ['q', 'source', 'min-score', 'sort', 'applied-only'].forEach(id => {
+          document.getElementById(id).addEventListener('change', () => { currentPage = 1; render(); });
+        });
+        document.getElementById('q').addEventListener('input', () => { currentPage = 1; render(); });
         document.getElementById('clear-apps').addEventListener('click', () => {
           if (confirm('Clear all application history?')) { localStorage.removeItem(APPS_KEY); updateAppliedStat(); render(); renderAppsLog(); }
         });
@@ -594,9 +837,9 @@
 
       } catch (err) {
         console.error(err);
-        setSearching(false, '');
-        document.getElementById('jobs-list').innerHTML =
-          `<div class="empty">Error loading: ${escapeHtml(err.message)}<br/><br/>Try searching for a specific job role using the search bar above.</div>`;
+        setStatus(false, '');
+        document.getElementById('jobs-tbody').innerHTML =
+          `<tr><td colspan="7"><div class="table-empty">Error loading: ${escapeHtml(err.message)}</div></td></tr>`;
       }
     })();
   </script>
