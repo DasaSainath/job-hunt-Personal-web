@@ -5,6 +5,89 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Jobs Dashboard</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    /* Jobs hero banner */
+    .jobs-hero {
+      position: relative; overflow: hidden;
+      background: linear-gradient(135deg, #0f1115 0%, #0d1f35 40%, #0f2a1e 70%, #1a0f2a 100%);
+      background-size: 400% 400%;
+      animation: heroShift 16s ease infinite;
+      padding: 36px 0 28px;
+      border-bottom: 1px solid var(--border);
+    }
+    @keyframes heroShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .jobs-hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 20% 50%, rgba(110,168,254,0.08) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 20%, rgba(123,227,181,0.06) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .jobs-hero-inner {
+      max-width: 1100px; margin: 0 auto; padding: 0 24px;
+      position: relative; z-index: 1;
+    }
+    .jobs-hero h1 { margin: 0 0 6px; font-size: 2rem; letter-spacing: -0.02em; }
+    .jobs-hero p { margin: 0 0 20px; color: var(--muted); }
+
+    /* Live search bar */
+    .live-search-bar {
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    }
+    .live-search-input {
+      flex: 1; min-width: 260px; max-width: 500px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: var(--radius-sm);
+      color: #fff; padding: 11px 16px;
+      font: inherit; font-size: 0.95rem;
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .live-search-input::placeholder { color: rgba(255,255,255,0.35); }
+    .live-search-input:focus { outline: none; border-color: var(--accent); background: rgba(255,255,255,0.10); }
+    .live-search-input::-webkit-search-cancel-button { display: none; }
+
+    .live-search-btn {
+      padding: 11px 20px; background: var(--accent); color: #fff;
+      border: none; border-radius: var(--radius-sm); font: inherit;
+      font-size: 0.92rem; font-weight: 700; cursor: pointer;
+      transition: filter 0.15s; white-space: nowrap;
+    }
+    .live-search-btn:hover { filter: brightness(1.12); }
+    .live-search-btn:disabled { opacity: 0.6; cursor: default; filter: none; }
+
+    .live-search-sources {
+      font-size: 0.78rem; color: rgba(255,255,255,0.4);
+      margin-top: 8px;
+    }
+    .live-search-sources span { color: rgba(123,227,181,0.7); }
+
+    /* Status and loading */
+    .live-status {
+      padding: 10px 0; font-size: 0.85rem; color: var(--muted);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .live-spinner {
+      width: 14px; height: 14px; border: 2px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.7s linear infinite; display: none;
+    }
+    .live-spinner.visible { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Source badge for live results */
+    .source-badge-live {
+      background: rgba(110,168,254,0.12); border-color: rgba(110,168,254,0.3);
+      color: var(--accent);
+    }
+    .jobs-stat-grid { margin-top: 20px; }
+  </style>
 </head>
 <body>
   <nav class="nav">
@@ -18,17 +101,26 @@
     </div>
   </nav>
 
-  <main class="container">
-    <div class="dash-header">
-      <div>
-        <h1>Job Dashboard</h1>
-        <p class="muted" id="status-line">Loading jobs…</p>
+  <!-- Hero with live search -->
+  <div class="jobs-hero">
+    <div class="jobs-hero-inner">
+      <h1>Job Dashboard</h1>
+      <p id="status-line">Search for jobs or browse below — scored against your resume in real time.</p>
+      <div class="live-search-bar">
+        <input type="search" id="live-q" class="live-search-input"
+               placeholder="Search: React Developer, Data Engineer, Python Backend…" />
+        <button type="button" id="live-search-btn" class="live-search-btn">Search Live Jobs</button>
+        <span class="last-updated" id="updated-at"></span>
       </div>
-      <span class="last-updated" id="updated-at"></span>
+      <div class="live-search-sources">
+        Live sources: <span>Remotive</span> · <span>Arbeitnow</span> · <span>Himalayas</span> + cached feed
+      </div>
     </div>
+  </div>
 
+  <main class="container">
     <!-- Stat cards -->
-    <div class="stat-grid">
+    <div class="stat-grid jobs-stat-grid">
       <div class="stat-card accent-blue">
         <div class="stat-number" id="stat-total">—</div>
         <div class="stat-label">Total Jobs</div>
@@ -51,7 +143,7 @@
       </div>
     </div>
 
-    <!-- Time filter buttons -->
+    <!-- Filters -->
     <div class="filters">
       <span class="time-filter-label">Posted within</span>
       <div class="time-filter-group">
@@ -61,7 +153,7 @@
         <button type="button" class="time-btn" data-hours="168">7d</button>
       </div>
 
-      <label for="q">Search</label>
+      <label for="q">Filter</label>
       <input id="q" type="text" placeholder="title, company, skill…" />
 
       <label for="source">Source</label>
@@ -87,7 +179,12 @@
       </label>
     </div>
 
-    <div id="jobs-list"><div class="loading">Loading…</div></div>
+    <div class="live-status" id="live-status">
+      <div class="live-spinner" id="live-spinner"></div>
+      <span id="live-status-text"></span>
+    </div>
+
+    <div id="jobs-list"><div class="loading">Loading jobs…</div></div>
 
     <!-- Applications log -->
     <section class="apps-log-section">
@@ -104,7 +201,7 @@
   </main>
 
   <footer class="footer">
-    Feed refreshes daily via GitHub Actions.
+    Live search via Remotive · Arbeitnow · Himalayas · Cached feed via GitHub Actions
   </footer>
 
   <script type="module">
@@ -114,13 +211,105 @@
     markActiveNav();
 
     const APPS_KEY = 'jh_applications';
-    const state = { jobs: [] };
+    const state = { jobs: [], liveJobs: [] };
+    let resumeText = '';
+    let skills = [];
     let activeHours = 0;
+    let isSearching = false;
+
+    // ---- Live job fetch from public APIs ----
+    async function fetchFromRemotive(query) {
+      try {
+        const url = `https://remotive.com/api/remote-jobs${query ? '?search=' + encodeURIComponent(query) + '&limit=50' : '?limit=100'}`;
+        const r = await fetch(url);
+        if (!r.ok) return [];
+        const d = await r.json();
+        return (d.jobs || []).map(j => ({
+          id: 'remotive-' + j.id,
+          title: j.title || '',
+          company: j.company_name || '',
+          location: j.candidate_required_location || 'Remote',
+          url: j.url || '',
+          source: 'Remotive',
+          posted: (j.publication_date || '').slice(0, 10),
+          description: stripHtml(j.description || '').slice(0, 600),
+          tags: j.tags || [],
+          _live: true
+        }));
+      } catch (e) { console.warn('Remotive error:', e); return []; }
+    }
+
+    async function fetchFromArbeitnow(query) {
+      try {
+        const r = await fetch('https://www.arbeitnow.com/api/job-board-api');
+        if (!r.ok) return [];
+        const d = await r.json();
+        const q = (query || '').toLowerCase();
+        return (d.data || [])
+          .filter(j => !q || (j.title + ' ' + (j.description || '')).toLowerCase().includes(q))
+          .slice(0, 40)
+          .map(j => ({
+            id: 'arbeitnow-' + j.slug,
+            title: j.title || '',
+            company: j.company_name || '',
+            location: j.location || 'Remote',
+            url: j.url || '',
+            source: 'Arbeitnow',
+            posted: j.created_at ? new Date(j.created_at * 1000).toISOString().slice(0, 10) : '',
+            description: stripHtml(j.description || '').slice(0, 600),
+            tags: j.tags || [],
+            _live: true
+          }));
+      } catch (e) { console.warn('Arbeitnow error:', e); return []; }
+    }
+
+    async function fetchFromHimalayas(query) {
+      try {
+        const url = `https://himalayas.app/jobs/api?limit=50${query ? '&q=' + encodeURIComponent(query) : ''}`;
+        const r = await fetch(url);
+        if (!r.ok) return [];
+        const d = await r.json();
+        return (d.jobs || []).map(j => ({
+          id: 'himalayas-' + (j.id || j.slug || Math.random()),
+          title: j.title || '',
+          company: (j.company || {}).name || '',
+          location: j.locationRestrictions || 'Remote',
+          url: j.applicationLink || j.url || '',
+          source: 'Himalayas',
+          posted: (j.createdAt || '').slice(0, 10),
+          description: stripHtml(j.description || '').slice(0, 600),
+          tags: j.skills || [],
+          _live: true
+        }));
+      } catch (e) { console.warn('Himalayas error:', e); return []; }
+    }
+
+    async function searchLiveJobs(query) {
+      setSearching(true, 'Searching live job boards…');
+      try {
+        const [remotive, arbeitnow, himalayas] = await Promise.all([
+          fetchFromRemotive(query),
+          fetchFromArbeitnow(query),
+          fetchFromHimalayas(query)
+        ]);
+        const all = [...remotive, ...arbeitnow, ...himalayas];
+        setSearching(false, `Found ${all.length} live jobs · scoring against your resume…`);
+        return all;
+      } catch (e) {
+        setSearching(false, 'Live search failed — showing cached results');
+        return [];
+      }
+    }
+
+    function setSearching(on, msg) {
+      isSearching = on;
+      document.getElementById('live-spinner').classList.toggle('visible', on);
+      document.getElementById('live-status-text').textContent = msg || '';
+      document.getElementById('live-search-btn').disabled = on;
+    }
 
     // ---- Deduplication ----
-    function normalizeStr(s) {
-      return (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    }
+    function normalizeStr(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
 
     function deduplicateJobs(jobs) {
       const seenUrls = new Set();
@@ -134,6 +323,34 @@
         if (tcKey.length > 2) seenTitleCo.add(tcKey);
         return true;
       });
+    }
+
+    function scoreJobs(rawList) {
+      return rawList.map(j => {
+        if (!resumeText) return { ...j, matchScore: 0, matchedSkills: [], missingSkills: [] };
+        const m = matchResumeToJD([j.title, j.description].filter(Boolean).join('\n'), resumeText, skills);
+        return { ...j, matchScore: m.score, matchedSkills: m.matchedSkills, missingSkills: m.missingSkills };
+      });
+    }
+
+    function mergeAndScore(cached, live) {
+      const all = [...live, ...cached]; // live first to prefer live results
+      const deduped = deduplicateJobs(all);
+      return scoreJobs(deduped);
+    }
+
+    function rebuildStats(jobs) {
+      const today = new Date().toDateString();
+      document.getElementById('stat-total').textContent = jobs.length;
+      document.getElementById('stat-high').textContent = jobs.filter(j => j.matchScore >= 70).length;
+      document.getElementById('stat-mid').textContent = jobs.filter(j => j.matchScore >= 50 && j.matchScore < 70).length;
+      document.getElementById('stat-new').textContent = jobs.filter(j => j.posted && new Date(j.posted).toDateString() === today).length;
+
+      const srcSel = document.getElementById('source');
+      const current = srcSel.value;
+      srcSel.innerHTML = '<option value="">All sources</option>';
+      const sources = [...new Set(jobs.map(j => j.source).filter(Boolean))].sort();
+      sources.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; if (s === current) o.selected = true; srcSel.appendChild(o); });
     }
 
     // ---- Application storage ----
@@ -215,13 +432,16 @@
 
       const container = document.getElementById('jobs-list');
       if (list.length === 0) {
-        const msg = activeHours ? `No jobs found in the last ${activeHours}h. Try a wider time window or lower match %.` : 'No jobs match these filters. Try lowering the minimum match %.';
+        const msg = activeHours
+          ? `No jobs found in the last ${activeHours}h. Try a wider time window, lower match %, or search for a specific role above.`
+          : 'No jobs match these filters. Try lowering the minimum match % or search for a job role above.';
         container.innerHTML = `<div class="empty">${msg}</div>`;
         return;
       }
 
       container.innerHTML = list.map(j => {
         const applied = isApplied(j.url);
+        const liveTag = j._live ? `<span class="source-badge source-badge-live">● Live</span>` : '';
         return `
           <div class="job-card ${applied ? 'job-card-applied' : ''}">
             <div class="job-head">
@@ -233,6 +453,7 @@
                   ${escapeHtml(j.company || '')}
                   ${j.location ? ' · ' + escapeHtml(j.location) : ''}
                   <span class="source-badge">${escapeHtml(j.source || '')}</span>
+                  ${liveTag}
                   ${j.posted ? '<span class="small muted"> · ' + escapeHtml(formatDate(j.posted)) + '</span>' : ''}
                   ${applied ? `<span class="applied-date-badge">✓ Applied ${escapeHtml(getAppliedDate(j.url))}</span>` : ''}
                 </p>
@@ -306,34 +527,60 @@
       el.querySelectorAll('.btn-remove-app').forEach(btn => btn.addEventListener('click', () => removeApp(btn.dataset.url)));
     }
 
+    // ---- Live search handler ----
+    document.getElementById('live-search-btn').addEventListener('click', async () => {
+      const query = document.getElementById('live-q').value.trim();
+      const liveResults = await searchLiveJobs(query);
+      state.liveJobs = liveResults;
+      state.jobs = mergeAndScore(state.cachedJobs || [], liveResults);
+      rebuildStats(state.jobs);
+      setSearching(false, `${state.jobs.length} jobs found (${liveResults.length} live · ${(state.cachedJobs||[]).length} cached)`);
+      render();
+    });
+
+    document.getElementById('live-q').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('live-search-btn').click();
+    });
+
     // ---- Init ----
     (async () => {
       try {
-        const [resume, feed, skills] = await Promise.all([loadResume(), loadAllJobs(), loadSkills()]);
+        const [resume, feed, skillData] = await Promise.all([
+          loadResume(),
+          loadAllJobs().catch(() => ({ jobs: [], updated_at: '' })),
+          loadSkills().catch(() => ({ skills: [] }))
+        ]);
+
         document.getElementById('brand-name').textContent = resume.name || 'Portfolio';
-        const resumeText = resumeToText(resume);
-        const today = new Date().toDateString();
+        skills = Array.isArray(skillData) ? skillData : (skillData.skills || []);
 
-        // Score + deduplicate
-        const raw = (feed.jobs || []).map(j => {
-          const m = matchResumeToJD([j.title, j.description].filter(Boolean).join('\n'), resumeText, skills);
-          return { ...j, matchScore: m.score, matchedSkills: m.matchedSkills, missingSkills: m.missingSkills };
-        });
-        state.jobs = deduplicateJobs(raw);
+        // Build resume text for scoring
+        const parts = [resume.title || '', resume.tagline || '', resume.summary || ''];
+        Object.values(resume.skills || {}).forEach(arr => { if (Array.isArray(arr)) parts.push(arr.join(' ')); });
+        (resume.experience || []).forEach(e => { parts.push(e.role || '', e.company || ''); (e.bullets || []).forEach(b => parts.push(b)); });
+        resumeText = parts.join(' ');
 
-        const total = state.jobs.length;
-        document.getElementById('stat-total').textContent = total;
-        document.getElementById('stat-high').textContent = state.jobs.filter(j => j.matchScore >= 70).length;
-        document.getElementById('stat-mid').textContent = state.jobs.filter(j => j.matchScore >= 50 && j.matchScore < 70).length;
-        document.getElementById('stat-new').textContent = state.jobs.filter(j => j.posted && new Date(j.posted).toDateString() === today).length;
-        updateAppliedStat();
+        document.getElementById('updated-at').textContent = feed.updated_at ? `Cache: ${feed.updated_at}` : '';
 
-        const sources = [...new Set(state.jobs.map(j => j.source).filter(Boolean))].sort();
-        const srcSel = document.getElementById('source');
-        sources.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; srcSel.appendChild(o); });
+        // Score cached jobs
+        const cachedRaw = (feed.jobs || []);
+        state.cachedJobs = scoreJobs(cachedRaw);
 
-        document.getElementById('status-line').textContent = `${total} unique jobs · ranked against your resume`;
-        document.getElementById('updated-at').textContent = feed.updated_at ? `Last updated ${feed.updated_at}` : 'Run the GitHub Action to populate jobs';
+        setSearching(true, 'Loading live jobs from Remotive, Arbeitnow, Himalayas…');
+
+        // Fetch live jobs immediately on load (no query = general listing)
+        const liveResults = await Promise.all([
+          fetchFromRemotive('software engineer'),
+          fetchFromArbeitnow(''),
+          fetchFromHimalayas('software')
+        ]).then(([r, a, h]) => [...r, ...a, ...h]).catch(() => []);
+
+        state.liveJobs = liveResults;
+        state.jobs = mergeAndScore(state.cachedJobs, liveResults);
+
+        rebuildStats(state.jobs);
+        setSearching(false, `${state.jobs.length} jobs · scored against your resume`);
+        document.getElementById('status-line').textContent = `${state.jobs.length} jobs scored against your resume · search by role for specific results`;
 
         ['q', 'source', 'min-score', 'sort', 'applied-only'].forEach(id => document.getElementById(id).addEventListener('change', render));
         document.getElementById('q').addEventListener('input', render);
@@ -341,12 +588,15 @@
           if (confirm('Clear all application history?')) { localStorage.removeItem(APPS_KEY); updateAppliedStat(); render(); renderAppsLog(); }
         });
 
+        updateAppliedStat();
         render();
         renderAppsLog();
+
       } catch (err) {
         console.error(err);
+        setSearching(false, '');
         document.getElementById('jobs-list').innerHTML =
-          `<div class="empty">Error loading jobs: ${escapeHtml(err.message)}<br/><br/>Make sure <code>data/jobs.json</code> exists. The GitHub Action creates it on its first run.</div>`;
+          `<div class="empty">Error loading: ${escapeHtml(err.message)}<br/><br/>Try searching for a specific job role using the search bar above.</div>`;
       }
     })();
   </script>

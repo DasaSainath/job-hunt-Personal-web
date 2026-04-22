@@ -65,7 +65,6 @@
     }
     .doc-loading.visible { display: flex; }
 
-    /* docx-preview overrides — keep original doc look */
     #resume-preview .docx-wrapper {
       background: white !important;
       box-shadow: 0 2px 20px rgba(0,0,0,0.22) !important;
@@ -77,6 +76,13 @@
     .panel-right { flex: 1; overflow-y: auto; padding: 24px 28px; }
     .matcher-header { margin-bottom: 20px; }
     .matcher-header h2 { font-size: 1.35rem; margin: 0 0 4px; }
+    .scoring-method {
+      font-size: 0.78rem; color: var(--muted);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 8px 12px;
+      margin-top: 8px; line-height: 1.5;
+    }
+    .scoring-method strong { color: var(--accent); }
     .jd-label {
       font-size: 0.78rem; color: var(--muted); text-transform: uppercase;
       letter-spacing: 0.06em; font-weight: 600; margin-bottom: 6px;
@@ -91,26 +97,57 @@
     .breakdown-label { font-size: 0.82rem; color: var(--muted); font-weight: 500; }
     .breakdown-pct { font-size: 0.82rem; font-weight: 700; text-align: right; }
 
-    /* Suggestion cards */
-    .suggestions-list { display: flex; flex-direction: column; gap: 10px; }
+    /* Suggestion cards — redesigned */
+    .suggestions-list { display: flex; flex-direction: column; gap: 12px; }
     .suggestion-card {
       background: var(--surface); border: 1px solid var(--border);
-      border-left: 3px solid var(--border); border-radius: var(--radius-sm);
-      padding: 12px 14px; display: flex; gap: 12px; align-items: flex-start;
+      border-left: 4px solid var(--border); border-radius: var(--radius-sm);
+      padding: 14px 16px;
     }
     .suggestion-card.type-skill { border-left-color: var(--accent-2); }
     .suggestion-card.type-experience { border-left-color: var(--warn); }
     .suggestion-card.type-summary { border-left-color: var(--accent); }
-    .suggestion-body { flex: 1; min-width: 0; }
-    .suggestion-type-label {
-      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.06em; margin-bottom: 4px;
+
+    .suggestion-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 6px; gap: 10px;
     }
-    .suggestion-type-label.skill { color: var(--accent-2); }
-    .suggestion-type-label.experience { color: var(--warn); }
-    .suggestion-type-label.summary { color: var(--accent); }
-    .suggestion-text { font-size: 0.9rem; color: var(--text); margin: 0 0 5px; }
-    .suggestion-impact { font-size: 0.78rem; color: var(--muted); }
+    .suggestion-badge {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; padding: 2px 8px; border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .badge-skill { background: rgba(123,227,181,0.15); color: var(--accent-2); }
+    .badge-experience { background: rgba(245,185,113,0.15); color: var(--warn); }
+    .badge-summary { background: rgba(110,168,254,0.15); color: var(--accent); }
+
+    .suggestion-impact {
+      font-size: 0.75rem; font-weight: 700; color: var(--accent-2);
+      background: rgba(123,227,181,0.08); padding: 2px 8px; border-radius: 4px;
+    }
+
+    .suggestion-sentence {
+      font-size: 0.88rem; color: var(--muted); margin: 6px 0 10px;
+      font-style: italic; line-height: 1.5;
+      background: var(--surface-2); border-radius: var(--radius-sm);
+      padding: 10px 14px; border-left: 3px solid var(--border);
+    }
+    .suggestion-where {
+      font-size: 0.78rem; color: var(--muted); margin-bottom: 8px;
+    }
+    .suggestion-where strong { color: var(--text); }
+    .suggestion-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    .btn-copy-sentence {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); background: var(--surface);
+      color: var(--text); font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; transition: border-color 0.15s, background 0.15s;
+    }
+    .btn-copy-sentence:hover { border-color: var(--accent); background: var(--surface-2); }
+    .btn-copy-sentence.copied { border-color: var(--accent-2); color: var(--accent-2); }
+
     .btn-add-skill {
       display: inline-flex; align-items: center; padding: 5px 12px;
       background: var(--accent-2); color: #0f1115; border-radius: var(--radius-sm);
@@ -154,6 +191,16 @@
       background: white; padding: 36px 40px; font-family: monospace;
       font-size: 12.5px; line-height: 1.6; white-space: pre-wrap;
       box-shadow: 0 2px 16px rgba(0,0,0,0.18); color: #111;
+    }
+
+    /* Gradient accent on right panel top */
+    .panel-right::before {
+      content: '';
+      display: block;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--warn));
+      margin: -24px -28px 20px;
+      border-radius: 0;
     }
 
     /* Print */
@@ -223,7 +270,12 @@
     <div class="panel-right">
       <div class="matcher-header">
         <h2>Resume ↔ JD Matcher</h2>
-        <p class="muted small">Upload your resume · paste a JD · see score by section · add missing skills directly into your resume.</p>
+        <p class="muted small">Upload your resume · paste a JD · get a score with specific sentences to add.</p>
+        <div class="scoring-method">
+          <strong>How scoring works:</strong> Skills dictionary match (60%) + TF-IDF cosine similarity (40%).
+          Skills are checked word-by-word against a curated dictionary. Content similarity compares your resume text against the JD using weighted term frequency — the same way ATS systems rank candidates.
+          Score is per-section: Skills, Experience, Summary.
+        </div>
       </div>
 
       <div>
@@ -267,7 +319,7 @@
         </div>
 
         <div class="result-section">
-          <div class="result-section-title">What to Add / Improve</div>
+          <div class="result-section-title">Specific Points to Add — Score Will Rise</div>
           <div class="suggestions-list" id="suggestions-list"></div>
         </div>
 
@@ -297,8 +349,8 @@
 
     const HISTORY_KEY = 'jh_match_history';
     let skills = [];
-    let originalBytes = null;    // never modified
-    let currentDocBytes = null;  // receives yellow-highlighted additions only
+    let originalBytes = null;
+    let currentDocBytes = null;
     let uploadedFileName = '';
     let resumeText = '';
     let resumeSections = {};
@@ -363,14 +415,9 @@
       const container = document.getElementById('resume-preview');
       container.innerHTML = '';
       await docx.renderAsync(buf, container, undefined, {
-        inWrapper: true,
-        ignoreWidth: false,
-        ignoreHeight: true,
-        ignoreFonts: false,
-        breakPages: true,
-        renderHeaders: true,
-        renderFooters: true,
-        useBase64URL: true,
+        inWrapper: true, ignoreWidth: false, ignoreHeight: true,
+        ignoreFonts: false, breakPages: true,
+        renderHeaders: true, renderFooters: true, useBase64URL: true,
       });
     }
 
@@ -445,7 +492,6 @@
       document.getElementById('breakdown-text').textContent =
         `Skill overlap: ${r.skillOverlapPct ?? '—'}% · Content similarity: ${r.contentSimPct}%`;
 
-      // Section bars
       const jdWords = [...new Set(jd.toLowerCase().split(/\W+/).filter(w => w.length > 3))];
       const bars = [
         ['skills', 'bar-skills', 'pct-skills', sectionOverlap(resumeSections.skills, jdWords)],
@@ -457,7 +503,6 @@
         document.getElementById(pctId).textContent = pct + '%';
       });
 
-      // Keywords
       document.getElementById('keywords').innerHTML = r.jdOnlyKeywords.length
         ? r.jdOnlyKeywords.map(k => `<span class="chip">${escapeHtml(k.term)}</span>`).join('')
         : '<span class="muted small">No distinctive JD-only terms.</span>';
@@ -465,59 +510,147 @@
       renderSuggestions(r, jdWords);
     }
 
+    // ---- Sentence generators ----
+    function hashCode(s) {
+      let h = 0;
+      for (let i = 0; i < s.length; i++) h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+      return Math.abs(h);
+    }
+
+    function buildExperienceBullet(gaps) {
+      const fw = gaps[0];
+      const supporting = gaps.slice(1, 3);
+      const h = hashCode(fw);
+
+      const isCloudOps = /k8s|kubernetes|docker|terraform|ci.?cd|devops|pipeline|deploy|cloud|aws|azure|gcp/i.test(fw);
+      const isFrontend = /react|angular|vue|typescript|ui|frontend|component|css|html|tailwind/i.test(fw);
+      const isData = /sql|databas|etl|pipeline|spark|kafka|analytic|machine.?learn|ml|ai|data/i.test(fw);
+      const isBackend = /api|microservice|rest|graphql|server|backend|spring|django|flask|node/i.test(fw);
+
+      const withPart = supporting.length > 0 ? ` integrated with ${supporting.join(' and ')}` : '';
+      const outcomes = [
+        'reducing system latency and improving developer velocity',
+        'delivering measurable improvements in reliability and team throughput',
+        'enabling scalable, production-grade solutions for cross-functional stakeholders',
+        'streamlining operations and accelerating feature delivery timelines',
+        'improving code quality and system observability across the stack'
+      ];
+      const outcome = outcomes[h % outcomes.length];
+
+      if (isCloudOps) return `Engineered ${fw} deployment workflows${withPart}, ${outcome}`;
+      if (isFrontend) return `Built ${fw}-based component libraries${withPart}, ${outcome}`;
+      if (isData) return `Designed ${fw} data pipelines${withPart}, ${outcome}`;
+      if (isBackend) return `Developed ${fw} service architecture${withPart}, ${outcome}`;
+
+      const verbs = ['Implemented', 'Delivered', 'Architected', 'Built', 'Led', 'Drove'];
+      const v = verbs[h % verbs.length];
+      return `${v} ${fw}${withPart ? '-based solutions' + withPart : ''}, ${outcome}`;
+    }
+
+    function buildSummaryAddition(gaps, matchedSkills) {
+      const keywords = gaps.slice(0, 3).join(', ');
+      if (matchedSkills.length > 0) {
+        const matched = matchedSkills.slice(0, 2).join(' and ');
+        return `Hands-on experience with ${keywords}; proven ability to leverage ${matched} in production-grade, agile environments.`;
+      }
+      return `Experienced in ${keywords}, with a focus on building scalable, maintainable software that creates real-world impact.`;
+    }
+
+    // ---- Suggestions ----
     function renderSuggestions(r, jdWords) {
       const container = document.getElementById('suggestions-list');
       const items = [];
 
-      // Missing skills — can be added directly
+      const stopWords = new Set([
+        'experience','position','worked','years','using','ability','required','preferred','including',
+        'provide','support','manage','work','help','ensure','develop','create','build','responsible',
+        'duties','will','also','well','other','more','such','related','based','within','across','part',
+        'team','company','business','product','project','knowledge','understanding','strong','excellent',
+        'good','able','working','familiar','proficient','candidate','ideal','looking','seeking','apply'
+      ]);
+
+      // Missing skills — add directly into docx
       r.missingSkills.slice(0, 8).forEach(skill => {
         const already = addedSkills.includes(skill);
         const trial = matchResumeToJD(buildMatchText() + ' ' + skill + ' ' + skill, currentJD, skills);
-        const delta = trial.score - r.score;
-        items.push({ type: 'skill', label: 'Missing Skill',
-          text: `Add <strong>${escapeHtml(skill)}</strong> to your skills section`,
-          impact: delta > 0 ? `+${delta}% score impact` : 'Improves keyword coverage',
-          skill, already });
+        const delta = Math.max(0, trial.score - r.score);
+        items.push({ type: 'skill', skill, already, delta,
+          sentence: `Add "${skill}" to your Skills section`,
+          where: 'Skills section — list it under your technical skills' });
       });
 
-      // Experience gaps — guidance only
+      // Experience: ONE complete bullet sentence
       const expText = (resumeSections.experience || []).join(' ').toLowerCase();
-      const stopWords = new Set(['experience','position','worked','years','using','ability','required','preferred','including']);
-      jdWords.filter(w => w.length > 4 && !expText.includes(w) && !stopWords.has(w)).slice(0, 4).forEach(kw => {
-        items.push({ type: 'experience', label: 'Experience Gap',
-          text: `Mention <strong>${escapeHtml(kw)}</strong> in your experience bullets where it truthfully applies`,
-          impact: 'Strengthens experience-to-JD alignment' });
-      });
+      const expGaps = jdWords.filter(w => w.length > 4 && !expText.includes(w) && !stopWords.has(w)).slice(0, 5);
+      if (expGaps.length > 0) {
+        const sentence = buildExperienceBullet(expGaps);
+        const trial = matchResumeToJD(buildMatchText() + ' ' + expGaps.join(' ') + ' ' + expGaps.join(' '), currentJD, skills);
+        const delta = Math.max(0, trial.score - r.score);
+        items.push({ type: 'experience', sentence, delta,
+          where: 'Experience section — add as a bullet under your most relevant role' });
+      }
 
-      // Summary gaps — guidance only
+      // Summary: ONE complete sentence
       const sumText = (resumeSections.summary || []).join(' ').toLowerCase();
-      jdWords.filter(w => w.length > 5 && !sumText.includes(w) && !stopWords.has(w)).slice(0, 3).forEach(kw => {
-        items.push({ type: 'summary', label: 'Summary Gap',
-          text: `Add <strong>${escapeHtml(kw)}</strong> to your professional summary`,
-          impact: 'Improves first-impression keyword match' });
-      });
+      const sumGaps = jdWords.filter(w => w.length > 5 && !sumText.includes(w) && !stopWords.has(w)).slice(0, 4);
+      if (sumGaps.length > 0) {
+        const sentence = buildSummaryAddition(sumGaps, r.matchedSkills.slice(0, 3));
+        const trial = matchResumeToJD(buildMatchText() + ' ' + sumGaps.join(' ') + ' ' + sumGaps.join(' '), currentJD, skills);
+        const delta = Math.max(0, trial.score - r.score);
+        items.push({ type: 'summary', sentence, delta,
+          where: 'Summary / Profile section — append to your professional summary paragraph' });
+      }
 
       if (!items.length) {
         container.innerHTML = '<p class="muted small">Great coverage — no major gaps found.</p>';
         return;
       }
 
-      container.innerHTML = items.map(it => `
-        <div class="suggestion-card type-${it.type}">
-          <div class="suggestion-body">
-            <div class="suggestion-type-label ${it.type}">${escapeHtml(it.label)}</div>
-            <p class="suggestion-text">${it.text}</p>
-            <div class="suggestion-impact">${escapeHtml(it.impact)}</div>
-          </div>
-          ${it.skill
-            ? `<button type="button" class="btn-add-skill" data-skill="${escapeHtml(it.skill)}" ${it.already ? 'disabled' : ''}>
-                 ${it.already ? '✓ Added' : '+ Add'}
-               </button>`
-            : ''}
-        </div>`).join('');
+      container.innerHTML = items.map((it, idx) => {
+        const badgeClass = `badge-${it.type}`;
+        const typeLabel = it.type === 'skill' ? 'Missing Skill' : it.type === 'experience' ? 'Experience Bullet' : 'Summary Addition';
+        const impactText = it.delta > 0 ? `+${it.delta}% score if added` : 'Improves ATS coverage';
+        const isSkill = it.type === 'skill';
+
+        return `
+          <div class="suggestion-card type-${it.type}">
+            <div class="suggestion-top">
+              <span class="suggestion-badge ${badgeClass}">${typeLabel}</span>
+              <span class="suggestion-impact">${impactText}</span>
+            </div>
+            <div class="suggestion-where">Where to add: <strong>${escapeHtml(it.where)}</strong></div>
+            ${isSkill
+              ? `<div class="suggestion-actions">
+                   <button type="button" class="btn-add-skill" data-skill="${escapeHtml(it.skill)}" ${it.already ? 'disabled' : ''}>
+                     ${it.already ? '✓ Added to preview' : '+ Add to docx preview'}
+                   </button>
+                 </div>`
+              : `<div class="suggestion-sentence" id="sent-${idx}">"${escapeHtml(it.sentence)}"</div>
+                 <div class="suggestion-actions">
+                   <button type="button" class="btn-copy-sentence" data-idx="${idx}" data-text="${escapeHtml(it.sentence)}">
+                     📋 Copy sentence
+                   </button>
+                 </div>`
+            }
+          </div>`;
+      }).join('');
 
       container.querySelectorAll('.btn-add-skill:not([disabled])').forEach(btn => {
         btn.addEventListener('click', () => addSkill(btn.dataset.skill));
+      });
+
+      container.querySelectorAll('.btn-copy-sentence').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(btn.dataset.text);
+            btn.textContent = '✓ Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => { btn.textContent = '📋 Copy sentence'; btn.classList.remove('copied'); }, 2000);
+          } catch (e) {
+            const el = document.getElementById('sent-' + btn.dataset.idx);
+            if (el) { const range = document.createRange(); range.selectNode(el); window.getSelection().removeAllRanges(); window.getSelection().addRange(range); }
+          }
+        });
       });
     }
 
@@ -526,10 +659,11 @@
       return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
-    function injectSkillIntoXml(xml, skill) {
-      const run = `<w:r><w:rPr><w:highlight w:val="yellow"/></w:rPr><w:t xml:space="preserve">, ${escXml(skill)}</w:t></w:r>`;
+    function injectSkillIntoXml(xml, skill, withHighlight = true) {
+      const rPr = withHighlight ? '<w:rPr><w:highlight w:val="yellow"/></w:rPr>' : '';
+      const run = `<w:r>${rPr}<w:t xml:space="preserve">, ${escXml(skill)}</w:t></w:r>`;
 
-      // Strategy 1: find paragraph right after a "Skills" heading paragraph
+      // Strategy 1: find paragraph right after a "Skills" heading
       const headRe = /<w:t[^>]*>[^<]*(skills?|technical skills?|competencies|technologies)[^<]*<\/w:t>/i;
       const headMatch = xml.match(headRe);
       if (headMatch) {
@@ -559,7 +693,6 @@
       }
       if (bestPos >= 0) return xml.slice(0, bestPos) + run + xml.slice(bestPos);
 
-      // Fallback: before last paragraph close
       const last = xml.lastIndexOf('</w:p>');
       return last >= 0 ? xml.slice(0, last) + run + xml.slice(last) : xml;
     }
@@ -573,7 +706,7 @@
         try {
           const zip = await JSZip.loadAsync(currentDocBytes.slice(0));
           const xml = await zip.file('word/document.xml').async('string');
-          zip.file('word/document.xml', injectSkillIntoXml(xml, skill));
+          zip.file('word/document.xml', injectSkillIntoXml(xml, skill, true)); // yellow in preview
           currentDocBytes = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
           await renderDoc(currentDocBytes.slice(0));
         } catch (e) { console.warn('Inject failed:', e); }
@@ -585,10 +718,30 @@
 
     // ---- Downloads ----
     document.getElementById('dl-pdf').addEventListener('click', () => window.print());
+
     document.getElementById('dl-word').addEventListener('click', async () => {
-      if (!currentDocBytes) { alert('Upload a resume first.'); return; }
-      const blob = new Blob([currentDocBytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-      saveAs(blob, uploadedFileName.replace(/\.[^.]+$/, '') + '_updated.docx');
+      if (!originalBytes) { alert('Upload a resume first.'); return; }
+      setLoading(true);
+      try {
+        // Rebuild from original bytes WITHOUT yellow highlight — clean resume
+        let dlBuf = originalBytes.slice(0);
+        if (addedSkills.length > 0 && isDocx) {
+          const zip = await JSZip.loadAsync(dlBuf);
+          let xml = await zip.file('word/document.xml').async('string');
+          // Inject each skill with withHighlight=false so no yellow formatting
+          for (const skill of addedSkills) {
+            xml = injectSkillIntoXml(xml, skill, false);
+          }
+          zip.file('word/document.xml', xml);
+          dlBuf = await zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
+        }
+        const blob = new Blob([dlBuf], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+        saveAs(blob, uploadedFileName.replace(/\.[^.]+$/, '') + '_updated.docx');
+      } catch (e) {
+        console.warn(e);
+        alert('Download failed: ' + e.message);
+      }
+      setLoading(false);
     });
 
     // ---- History ----
