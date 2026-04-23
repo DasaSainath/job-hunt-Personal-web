@@ -200,9 +200,9 @@
     <div class="time-chips">
       <button type="button" class="time-chip" data-hours="24">24h</button>
       <button type="button" class="time-chip" data-hours="72">72h</button>
-      <button type="button" class="time-chip active" data-hours="168">7d</button>
+      <button type="button" class="time-chip" data-hours="168">7d</button>
       <button type="button" class="time-chip" data-hours="720">30d</button>
-      <button type="button" class="time-chip" data-hours="0">All</button>
+      <button type="button" class="time-chip active" data-hours="0">All</button>
     </div>
 
     <div class="filter-sep"></div>
@@ -302,7 +302,7 @@ markActiveNav();
 
 const PAGE_SIZE = 30;
 const state = { jobs: [], cachedJobs: [], filtered: [] };
-let resumeText = '', skills = [], activeHours = 168, currentPage = 1;
+let resumeText = '', skills = [], activeHours = 0, currentPage = 1;
 
 // ---- API key check ----
 const rapidKey = store.get(KEYS.RAPID_API_KEY);
@@ -489,8 +489,11 @@ document.querySelectorAll('.time-chip').forEach(btn => {
   });
 });
 function withinWindow(posted) {
-  if (!activeHours || !posted) return !activeHours;
-  return new Date(posted) >= new Date(Date.now() - activeHours * 3600000);
+  if (!activeHours) return true;   // "All" — show everything
+  if (!posted) return true;        // no date on job — never filter it out
+  const d = new Date(posted);
+  if (isNaN(d)) return true;       // unparseable date — don't hide it
+  return d >= new Date(Date.now() - activeHours * 3600000);
 }
 
 // ---- Render table ----
@@ -636,11 +639,10 @@ async function runSearch() {
   document.getElementById('min-score').value = '0';
   currentPage = 1;
 
-  // Auto-switch to 7d so live JSearch/Remotive results aren't filtered out
-  if (activeHours < 168) {
-    activeHours = 168;
-    document.querySelectorAll('.time-chip').forEach(b => b.classList.toggle('active', b.dataset.hours === '168'));
-  }
+  // Always reset to "All" when search runs — shows every result from the API.
+  // User can narrow by clicking a time chip after seeing results.
+  activeHours = 0;
+  document.querySelectorAll('.time-chip').forEach(b => b.classList.toggle('active', b.dataset.hours === '0'));
 
   setStatus(true, `Searching for "${query}" in ${location}…`);
 
