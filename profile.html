@@ -1111,9 +1111,24 @@ function parseDocx(xml){
   }
 
   if(summaryLines.length) result.summary = summaryLines.join(' ');
+
+  // Deduplicate within each bucket first
   Object.keys(result.skills).forEach(k => {
     result.skills[k] = [...new Set(result.skills[k].filter(Boolean))];
   });
+
+  // Cross-bucket dedup: higher-priority bucket wins when same item appears in multiple buckets
+  const bucketPriority = ['frameworks', 'cloud', 'databases', 'languages', 'tools', 'other'];
+  const seenSkills = new Set();
+  for (const bucket of bucketPriority) {
+    result.skills[bucket] = result.skills[bucket].filter(item => {
+      const key = item.toLowerCase().trim();
+      if (seenSkills.has(key)) return false;
+      seenSkills.add(key);
+      return true;
+    });
+  }
+
   result.experience = result.experience.filter(e => e.role || e.company);
   result.education  = result.education.filter(e => e.degree || e.school);
 
@@ -1152,10 +1167,8 @@ async function handleUpload(file){
     if(parsed.linkedin) profile.links.linkedin = parsed.linkedin;
     if(parsed.github)   profile.links.github   = parsed.github;
 
-    // Skills: merge arrays
-    Object.keys(parsed.skills).forEach(k => {
-      if(parsed.skills[k].length) profile.skills[k] = [...new Set([...profile.skills[k], ...parsed.skills[k]])];
-    });
+    // Skills: replace entirely — whatever is in the resume is what shows, nothing extra
+    profile.skills = parsed.skills;
 
     if(parsed.experience.length)    profile.experience    = parsed.experience;
     if(parsed.education.length)     profile.education     = parsed.education;
@@ -1199,6 +1212,21 @@ async function handleUpload(file){
     profile.projects      = saved.projects      || [];
     profile.publications  = saved.publications  || [];
     if(saved.updatedAt) document.getElementById('last-saved').textContent = 'Last saved: ' + new Date(saved.updatedAt).toLocaleString();
+
+    // Migrate old publications that are actually projects (title contains "|" = "Project Name | Tech")
+    if(profile.publications && profile.publications.length){
+      const realPubs = [], migratedProjects = [];
+      profile.publications.forEach(pub => {
+        if(pub.title && pub.title.includes('|')){
+          const pi = pub.title.indexOf('|');
+          migratedProjects.push({ title: pub.title.slice(0, pi).trim(), tech: pub.title.slice(pi+1).trim(), url: pub.url||'', description: pub.description||'' });
+        } else { realPubs.push(pub); }
+      });
+      if(migratedProjects.length){
+        profile.publications = realPubs;
+        profile.projects = [...(profile.projects||[]), ...migratedProjects.filter(mp => !(profile.projects||[]).some(pp => pp.title === mp.title))];
+      }
+    }
   }
   // No fallback to data/resume.json — new users see a blank form and upload their own resume
 

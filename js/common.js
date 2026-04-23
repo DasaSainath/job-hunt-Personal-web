@@ -9,17 +9,22 @@ export async function loadJSON(path) {
 }
 
 export async function loadResume() {
-  // Prefer user-scoped profile from localStorage
+  // Always prefer user-scoped profile — return it even if name is blank
   try {
     const auth = JSON.parse(localStorage.getItem('jh_auth') || '{}');
     const email = (auth.email || '').toLowerCase().replace(/[^a-z0-9@.]/g, '_');
     const key = email ? `jh__${email}__profile` : null;
     if (key) {
       const raw = localStorage.getItem(key);
-      if (raw) { const p = JSON.parse(raw); if (p && p.name) return p; }
+      if (raw) {
+        const p = JSON.parse(raw);
+        // Return any saved profile object — not just ones where name was extracted
+        if (p && typeof p === 'object') return p;
+      }
     }
   } catch (e) { /* fall through */ }
-  return loadJSON('data/resume.json');
+  // Fallback: blank profile (don't try to load data/resume.json which may 404)
+  return { name:'', title:'', summary:'', skills:{}, experience:[], education:[], projects:[], publications:[] };
 }
 
 export async function loadAllJobs() {
@@ -45,6 +50,7 @@ export async function loadSkills() {
 // Flatten resume into a single searchable text blob (used by the matcher).
 export function resumeToText(resume) {
   const parts = [
+    resume.name || '',
     resume.title || '',
     resume.tagline || '',
     resume.summary || ''
@@ -58,8 +64,9 @@ export function resumeToText(resume) {
     (e.bullets || []).forEach(b => parts.push(b));
   });
   (resume.projects || []).forEach(p => {
-    parts.push(p.name || '', p.description || '');
-    (p.tech || []).forEach(t => parts.push(t));
+    parts.push(p.title || p.name || '', p.description || '');
+    if (Array.isArray(p.tech)) p.tech.forEach(t => parts.push(t));
+    else if (typeof p.tech === 'string') parts.push(p.tech);
   });
   (resume.education || []).forEach(ed => {
     parts.push(ed.degree || '', ed.school || '');

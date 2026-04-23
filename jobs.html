@@ -288,7 +288,7 @@
 </footer>
 
 <script type="module">
-import { loadResume, loadAllJobs, loadSkills, escapeHtml, stripHtml, formatDate, scoreClass, markActiveNav } from './js/common.js';
+import { loadResume, loadAllJobs, loadSkills, resumeToText, escapeHtml, stripHtml, formatDate, scoreClass, markActiveNav } from './js/common.js';
 import { matchResumeToJD } from './js/matcher.js';
 import { store, KEYS } from './js/storage.js';
 
@@ -387,6 +387,14 @@ async function fetchFromHimalayas(query) {
       tags: j.skills || [], _live: true
     }));
   } catch (e) { console.warn('Himalayas:', e); return []; }
+}
+
+// ---- Title relevance filter (keeps non-JSearch results on-topic) ----
+function isRelevant(job, query) {
+  if (job._jsearch) return true;  // JSearch already searched for query
+  if (!query) return true;
+  const titleLow = (job.title || '').toLowerCase();
+  return query.toLowerCase().split(/\s+/).some(word => word.length >= 3 && titleLow.includes(word));
 }
 
 // ---- Dedup ----
@@ -665,10 +673,11 @@ async function runSearch() {
     results = [...remotive, ...himalayas];
   }
 
-  const deduped = dedup(results);
+  const relevant = results.filter(j => isRelevant(j, query));
+  const deduped = dedup(relevant);
   state.jobs = scoreJobs(deduped);
   rebuildStats(state.jobs);
-  setStatus(false, `${results.length} jobs found · ${state.jobs.length} after dedup · scored against your resume`);
+  setStatus(false, `${results.length} fetched · ${relevant.length} relevant · ${state.jobs.length} after dedup · scored against your resume`);
   document.getElementById('status-line').textContent = `${state.jobs.length} jobs for "${query}" in ${location} · scored against your resume`;
   render();
 }
@@ -704,11 +713,7 @@ document.getElementById('clear-apps').addEventListener('click', () => {
 
     document.getElementById('brand-name').textContent = resume.name || 'JobHub';
     skills = Array.isArray(skillData) ? skillData : (skillData.skills || []);
-
-    const parts = [resume.title||'', resume.tagline||'', resume.summary||''];
-    Object.values(resume.skills||{}).forEach(arr => { if(Array.isArray(arr)) parts.push(arr.join(' ')); });
-    (resume.experience||[]).forEach(e => { parts.push(e.role||'',e.company||''); (e.bullets||[]).forEach(b=>parts.push(b)); });
-    resumeText = parts.join(' ');
+    resumeText = resumeToText(resume);
 
     if (feed.updated_at) document.getElementById('updated-at').textContent = `Cache: ${feed.updated_at}`;
 

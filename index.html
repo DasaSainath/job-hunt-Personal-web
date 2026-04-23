@@ -121,6 +121,9 @@
       box-shadow: 0 0 40px rgba(110,168,254,0.18);
     }
 
+    /* Dark page background */
+    body { background: #080c16; }
+
     /* Sections */
     .about-body { max-width: 820px; margin: 0 auto; padding: 0 24px 60px; }
     .about-section { padding: 36px 0; border-top: 1px solid var(--border); }
@@ -342,10 +345,11 @@
         document.getElementById('summary-body').textContent = r.summary || '';
 
         const skillsEl = document.getElementById('skills-body');
+        const SKILL_LABELS = { languages:'Languages', frameworks:'Frameworks', cloud:'Cloud / DevOps', databases:'Databases', tools:'Tools', other:'Other' };
         const groups = Object.entries(r.skills || {}).filter(([, list]) => Array.isArray(list) && list.length);
         skillsEl.innerHTML = groups.map(([group, list]) => `
           <div class="skill-row">
-            <div class="skill-row-label">${escapeHtml(group)}</div>
+            <div class="skill-row-label">${escapeHtml(SKILL_LABELS[group] || group)}</div>
             <div class="skill-chips">
               ${list.map(s => `<span class="chip">${escapeHtml(s)}</span>`).join('')}
             </div>
@@ -362,16 +366,20 @@
           </div>`).join('') || '<p class="muted">No experience listed yet.</p>';
 
         const projEl = document.getElementById('projects-body');
-        projEl.innerHTML = (r.projects || []).map(p => `
-          <div class="project-card">
+        projEl.innerHTML = (r.projects || []).map(p => {
+          const title = p.title || p.name || '';
+          const url   = p.url   || p.link || '';
+          const techChips = Array.isArray(p.tech)
+            ? p.tech.map(t => `<span class="chip">${escapeHtml(t)}</span>`).join('')
+            : (p.tech ? `<span class="chip">${escapeHtml(p.tech)}</span>` : '');
+          return `<div class="project-card">
             <p class="project-name">
-              ${p.link ? `<a href="${escapeHtml(p.link)}" target="_blank" rel="noopener">${escapeHtml(p.name || '')}</a>` : escapeHtml(p.name || '')}
+              ${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(title)}</a>` : escapeHtml(title)}
             </p>
             <p class="project-desc">${escapeHtml(p.description || '')}</p>
-            <div class="chip-row">
-              ${(p.tech || []).map(t => `<span class="chip">${escapeHtml(t)}</span>`).join('')}
-            </div>
-          </div>`).join('') || '<p class="muted">No projects listed.</p>';
+            <div class="chip-row">${techChips}</div>
+          </div>`;
+        }).join('') || '<p class="muted">No projects listed.</p>';
 
         const eduEl = document.getElementById('education-body');
         eduEl.innerHTML = (r.education || []).map(ed => `
@@ -382,8 +390,7 @@
 
       } catch (err) {
         console.error(err);
-        document.getElementById('hero-name').textContent = 'Error loading';
-        document.getElementById('hero-tagline').textContent = err.message;
+        document.getElementById('hero-tagline').textContent = 'Could not load profile — go to Profile to set up your info.';
       }
     })();
   </script>
