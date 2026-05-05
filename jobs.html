@@ -343,7 +343,7 @@ async function fetchFromJSearch(query, location) {
       url: j.job_apply_link || j.job_google_link || '',
       source: j.job_publisher || 'JSearch',
       posted: j.job_posted_at_datetime_utc ? j.job_posted_at_datetime_utc.slice(0, 10) : '',
-      description: (j.job_description || '').slice(0, 700),
+      description: (j.job_description || '').slice(0, 1500),
       salary: j.job_min_salary ? `$${Math.round(j.job_min_salary/1000)}k–$${Math.round((j.job_max_salary||j.job_min_salary)/1000)}k` : '',
       tags: j.job_required_skills || [],
       _live: true, _jsearch: true
@@ -365,7 +365,7 @@ async function fetchFromRemotive(query) {
       location: j.candidate_required_location || 'Remote',
       url: j.url || '', source: 'Remotive',
       posted: (j.publication_date || '').slice(0, 10),
-      description: (j.description || '').replace(/<[^>]+>/g,' ').slice(0, 700),
+      description: (j.description || '').replace(/<[^>]+>/g,' ').slice(0, 1500),
       tags: j.tags || [], _live: true
     }));
   } catch (e) { console.warn('Remotive:', e); return []; }
@@ -383,7 +383,7 @@ async function fetchFromHimalayas(query) {
       location: j.locationRestrictions || 'Remote',
       url: j.applicationLink || j.url || '', source: 'Himalayas',
       posted: (j.createdAt || '').slice(0, 10),
-      description: (j.description || '').replace(/<[^>]+>/g,' ').slice(0, 700),
+      description: (j.description || '').replace(/<[^>]+>/g,' ').slice(0, 1500),
       tags: j.skills || [], _live: true
     }));
   } catch (e) { console.warn('Himalayas:', e); return []; }
@@ -414,7 +414,8 @@ function dedup(jobs) {
 function scoreJobs(list) {
   return list.map(j => {
     if (!resumeText) return { ...j, matchScore: 0, matchedSkills: [], missingSkills: [] };
-    const m = matchResumeToJD([j.title, j.description].filter(Boolean).join('\n'), resumeText, skills);
+    const jdText = [j.title, j.description].filter(Boolean).join('\n');
+    const m = matchResumeToJD(resumeText, jdText, skills);
     return { ...j, matchScore: m.score, matchedSkills: m.matchedSkills, missingSkills: m.missingSkills };
   });
 }
@@ -538,10 +539,13 @@ function render() {
   const tbody = document.getElementById('jobs-tbody');
   if (total === 0) {
     const hasKey = !!store.get(KEYS.RAPID_API_KEY);
+    const timeHint = activeHours > 0 && state.jobs.length > 0
+      ? `<br/>⏱ The <strong>Posted: ${activeHours === 24 ? '24h' : activeHours === 72 ? '72h' : activeHours === 168 ? '7d' : '30d'}</strong> filter is hiding all ${state.jobs.length} loaded jobs — click <strong>All</strong> to see them.`
+      : '';
     tbody.innerHTML = `<tr><td colspan="7"><div class="table-empty">
       <strong>No jobs found</strong>
       ${!hasKey ? `<a href="profile.html#api-settings">Add your RapidAPI key in Profile</a> to search LinkedIn, Indeed &amp; Glassdoor.<br/>` : ''}
-      Try: switch the Posted filter to <strong>30d</strong> or <strong>All</strong>, broaden your search term, or change the location.
+      ${timeHint || `Try: switch the Posted filter to <strong>30d</strong> or <strong>All</strong>, broaden your search term, or change the location.`}
     </div></td></tr>`;
     document.getElementById('pag-bar').classList.add('pagination-hidden');
     return;
@@ -713,7 +717,15 @@ document.getElementById('clear-apps').addEventListener('click', () => {
 
     document.getElementById('brand-name').textContent = resume.name || 'JobHub';
     skills = Array.isArray(skillData) ? skillData : (skillData.skills || []);
-    resumeText = resumeToText(resume);
+    // Prefer raw DOCX text (saved when user uploads resume in Profile) for richer scoring.
+    // Fall back to structured profile text if raw text is not available.
+    const rawResumeText = store.get(KEYS.RESUME_TEXT) || '';
+    const profileText = resumeToText(resume);
+    resumeText = rawResumeText.length > profileText.length ? rawResumeText : profileText;
+
+    if (!resumeText.trim()) {
+      setStatus(false, '⚠️ No resume found — go to Profile, upload your .docx to enable job matching scores.');
+    }
 
     if (feed.updated_at) document.getElementById('updated-at').textContent = `Cache: ${feed.updated_at}`;
 

@@ -1184,6 +1184,10 @@ async function handleUpload(file){
     const xml = await zip.file('word/document.xml').async('string');
     const parsed = parseDocx(xml);
 
+    // Save raw document text so Jobs page can score jobs even before profile is saved
+    const rawText = [...xml.matchAll(/<w:t[^>]*>([^<]*)<\/w:t>/g)].map(m => m[1]).join(' ');
+    store.set(KEYS.RESUME_TEXT, rawText);
+
     // Merge into profile (don't overwrite non-empty fields the parser guessed wrong)
     const merge = (cur, next) => (next && !cur) ? next : cur;
     profile.name     = merge(profile.name, parsed.name);

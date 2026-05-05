@@ -34,4 +34,5 @@ export const KEYS = {
   RAPID_API_KEY: 'rapid_api_key',
   AI_API_KEY:    'ai_api_key',
   LOCATION_PREF: 'location_pref',
+  RESUME_TEXT:   'resume_text',
 };
