@@ -3,7 +3,7 @@
 //
 // Score = 0.6 * skill_overlap + 0.4 * content_similarity
 //   - skill_overlap: fraction of JD skills present in the resume
-//   - content_similarity: cosine similarity of TF-IDF vectors of the two texts
+//   - content_similarity: fraction of unique JD keywords found in the resume (ATS-accurate)
 //
 // Returns rich output: matched/missing skills, JD-only keywords, and
 // actionable suggestions for what to add to the resume.
@@ -120,15 +120,21 @@ export function matchResumeToJD(resumeText, jdText, skills) {
     skillOverlap = null;
   }
 
-  // Content similarity via TF-IDF cosine
+  // Content similarity: fraction of unique JD keywords present in the resume.
+  // Responds immediately when a keyword is added — unlike TF-IDF cosine which barely moves.
   const resumeTokens = tokenize(resumeText);
   const jdTokens = tokenize(jdText);
+  const resumeSet = new Set(resumeTokens);
+  const uniqueJDTerms = [...new Set(jdTokens)].filter(t => t.length > 3);
+  const contentSim = uniqueJDTerms.length > 0
+    ? uniqueJDTerms.filter(t => resumeSet.has(t)).length / uniqueJDTerms.length
+    : 0;
+
+  // TF-IDF only for identifying jdOnlyKeywords to surface to the user
   const tfR = termFreq(resumeTokens);
   const tfJ = termFreq(jdTokens);
   const idfMap = idf([tfR, tfJ]);
-  const vR = tfidfVec(tfR, idfMap);
   const vJ = tfidfVec(tfJ, idfMap);
-  const contentSim = cosineSim(vR, vJ);  // 0..1
 
   // Combined score — one decimal so even small improvements are visible
   let score;

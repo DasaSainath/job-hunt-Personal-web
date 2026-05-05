@@ -315,8 +315,8 @@
         <h2>Resume ↔ JD Matcher</h2>
         <p class="muted small">Upload your resume · paste a JD · get a score with specific sentences to add.</p>
         <div class="scoring-method">
-          <strong>How scoring works:</strong> Skills dictionary match (60%) + TF-IDF cosine similarity (40%).
-          Skills are checked word-by-word against a curated dictionary. Content similarity compares your resume text against the JD using weighted term frequency — the same way ATS systems rank candidates.
+          <strong>How scoring works:</strong> Skills dictionary match (60%) + JD keyword coverage (40%).
+          Skills are checked against a curated dictionary. Keyword coverage counts how many unique JD terms appear in your resume — every keyword you add raises the score immediately.
           Score is per-section: Skills, Experience, Summary.
         </div>
       </div>
@@ -786,26 +786,6 @@
     function injectSectionParagraph(xml, sentence, sectionType, withHighlight = true) {
       const rPr = withHighlight ? '<w:rPr><w:highlight w:val="yellow"/></w:rPr>' : '';
 
-      // For experience: copy bullet style from an adjacent bullet paragraph so it renders as a bullet.
-      // Fallback: plain paragraph with a "•" prefix if no adjacent style can be copied.
-      let para;
-      if (sectionType === 'experience') {
-        // Find the first paragraph with <w:numPr> (list/bullet) in the experience section
-        const numPrMatch = xml.match(/<w:p[ >](?:(?!<\/w:p>)[\s\S])*?<w:numPr>([\s\S]*?)<\/w:numPr>(?:(?!<\/w:p>)[\s\S])*?<\/w:p>/);
-        if (numPrMatch) {
-          // Extract the numPr block to replicate the same list level/style
-          const numPr = numPrMatch[0].match(/<w:numPr>[\s\S]*?<\/w:numPr>/)?.[0] || '';
-          const pPr = numPr ? `<w:pPr>${numPr}</w:pPr>` : '';
-          para = `<w:p>${pPr}<w:r>${rPr}<w:t xml:space="preserve">${escXml(sentence)}</w:t></w:r></w:p>`;
-        } else {
-          // No numPr found — use a bullet character so it still looks like a bullet
-          para = `<w:p><w:r>${rPr}<w:t xml:space="preserve">• ${escXml(sentence)}</w:t></w:r></w:p>`;
-        }
-      } else {
-        // Summary: plain paragraph, no bullet
-        para = `<w:p><w:r>${rPr}<w:t xml:space="preserve">${escXml(sentence)}</w:t></w:r></w:p>`;
-      }
-
       const patterns = {
         experience: /experience|employment|work history|career|professional/i,
         summary:    /summary|objective|profile|about/i
@@ -813,13 +793,12 @@
       const pattern = patterns[sectionType];
 
       const sectionBoundary = /^(education|academic|degree|certification|skills?|technical skills?|competencies|technologies?|projects?|publications?|awards?|references?|interests?|volunteer)/i;
-      // Detect a date range like "Jan 2024 – Present" or "Apr 2022 - Jul 2023"
       const dateRangeRe = /(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[.,\s]+\d{4}/i;
 
       let insertPos = -1;
       let s = 0;
       let inSection = false;
-      let firstDateSeen = false; // tracks whether we've passed the first role's date line
+      let firstDateSeen = false;
 
       while (s < xml.length) {
         const pStart = xml.indexOf('<w:p', s);
@@ -844,13 +823,8 @@
         } else {
           if (isHeading && texts.length < 50 && sectionBoundary.test(texts) && !pattern.test(texts)) break;
 
-          // For experience: stop after first role's last bullet, just before second role starts.
-          // A second date range (e.g. "Apr 2022 – Jul 2023") signals the next company/role.
           if (sectionType === 'experience' && dateRangeRe.test(texts)) {
-            if (firstDateSeen) {
-              // Second role detected — insertPos already holds end of first role's last bullet
-              break;
-            }
+            if (firstDateSeen) break;
             firstDateSeen = true;
           }
 
@@ -863,6 +837,26 @@
         const last = xml.lastIndexOf('</w:p>');
         insertPos = last >= 0 ? last + 6 : xml.length;
       }
+
+      // Copy paragraph formatting from the preceding paragraph so the new bullet
+      // inherits the same indentation and spacing — avoids the whitespace gap.
+      const prevPEnd = xml.lastIndexOf('</w:p>', insertPos - 1);
+      const prevPStart = prevPEnd >= 0 ? xml.lastIndexOf('<w:p', prevPEnd) : -1;
+      let pPr = '';
+      if (prevPStart >= 0) {
+        const prevSeg = xml.slice(prevPStart, prevPEnd + 6);
+        const pPrMatch = prevSeg.match(/<w:pPr>[\s\S]*?<\/w:pPr>/);
+        if (pPrMatch) {
+          // Strip auto-numbering — we prepend a "•" character instead
+          pPr = pPrMatch[0].replace(/<w:numPr>[\s\S]*?<\/w:numPr>/, '');
+        }
+      }
+
+      const textContent = sectionType === 'experience'
+        ? `• ${escXml(sentence)}`
+        : escXml(sentence);
+      const para = `<w:p>${pPr}<w:r>${rPr}<w:t xml:space="preserve">${textContent}</w:t></w:r></w:p>`;
+
       return xml.slice(0, insertPos) + para + xml.slice(insertPos);
     }
 
