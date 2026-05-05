@@ -202,8 +202,9 @@
       <div class="login-divider" style="margin-top:20px;"><span>demo mode</span></div>
 
       <div class="login-demo">
-        Any email &amp; password will sign you in.<br/>
-        <strong>This is a portfolio demo — no data is sent anywhere.</strong>
+        New email = new account (password set on first sign-in).<br/>
+        Returning users must use the same password.<br/>
+        <strong>All data stays in your browser — nothing is sent anywhere.</strong>
       </div>
 
       <div class="login-footer">
@@ -219,6 +220,13 @@
       window.location.replace('index.html');
     }
 
+    // Simple non-cryptographic hash — sufficient for this client-side demo
+    function simpleHash(s) {
+      let h = 5381;
+      for (let i = 0; i < s.length; i++) h = (h << 5) + h + s.charCodeAt(i);
+      return (h >>> 0).toString(36);
+    }
+
     const form = document.getElementById('loginForm');
     const errEl = document.getElementById('loginError');
     const submitBtn = document.getElementById('submitBtn');
@@ -227,7 +235,7 @@
       e.preventDefault();
       errEl.classList.remove('visible');
 
-      const email = document.getElementById('email').value.trim();
+      const email = document.getElementById('email').value.trim().toLowerCase();
       const password = document.getElementById('password').value;
 
       if (!email || !password) {
@@ -236,12 +244,26 @@
         return;
       }
 
-      // Demo: any valid-looking email/password works
+      const pwKey = 'jh_pw_' + email.replace(/[^a-z0-9@.]/g, '_');
+      const storedHash = localStorage.getItem(pwKey);
+      const inputHash = simpleHash(password);
+
+      if (storedHash && storedHash !== inputHash) {
+        errEl.textContent = 'Incorrect password. Try again.';
+        errEl.classList.add('visible');
+        return;
+      }
+
+      // New account — save the password hash
+      if (!storedHash) {
+        localStorage.setItem(pwKey, inputHash);
+      }
+
       submitBtn.disabled = true;
       submitBtn.innerHTML = '<span class="login-loading"></span>Signing in…';
 
       setTimeout(() => {
-        const initials = email.split('@')[0].slice(0,2).toUpperCase();
+        const initials = email.split('@')[0].slice(0, 2).toUpperCase();
         localStorage.setItem('jh_auth', JSON.stringify({
           email,
           initials,

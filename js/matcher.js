@@ -130,12 +130,12 @@ export function matchResumeToJD(resumeText, jdText, skills) {
   const vJ = tfidfVec(tfJ, idfMap);
   const contentSim = cosineSim(vR, vJ);  // 0..1
 
-  // Combined score
+  // Combined score — one decimal so even small improvements are visible
   let score;
   if (skillOverlap === null) {
-    score = Math.round(contentSim * 100);
+    score = Math.round(contentSim * 1000) / 10;
   } else {
-    score = Math.round((0.6 * skillOverlap + 0.4 * contentSim) * 100);
+    score = Math.round((0.6 * skillOverlap + 0.4 * contentSim) * 1000) / 10;
   }
 
   // JD-only keywords (not skills, but distinctive terms JD uses heavily)

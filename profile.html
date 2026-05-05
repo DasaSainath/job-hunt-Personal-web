@@ -183,6 +183,12 @@
     .save-ok { font-size: 0.84rem; color: var(--success); display: none; }
     .save-ok.show { display: block; }
     .last-saved-txt { font-size: 0.78rem; color: var(--muted); }
+    .btn-clear-profile {
+      margin-left: auto; padding: 8px 16px;
+      background: transparent; border: 1px solid var(--danger); color: var(--danger);
+      border-radius: var(--radius-sm); font: inherit; font-size: 0.82rem; cursor: pointer;
+    }
+    .btn-clear-profile:hover { background: rgba(220,38,38,0.06); }
 
     /* Utility classes replacing inline styles */
     .nav-email-txt { font-size: 0.82rem; color: var(--muted); }
@@ -429,7 +435,14 @@
       <h3>API Settings — Connect Job Sources &amp; AI</h3>
     </div>
     <div class="card-body">
-      <p class="api-desc">These keys are stored only in your browser. Sign up free at <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank" rel="noopener">RapidAPI → JSearch</a> to unlock LinkedIn, Indeed, and Glassdoor results.</p>
+      <p class="api-desc">
+        Keys are stored only in your browser — never sent anywhere.
+        <strong>To get a free RapidAPI key:</strong>
+        1) Go to <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank" rel="noopener">RapidAPI → JSearch</a> &nbsp;
+        2) Click <strong>Subscribe to Test</strong> → choose the <strong>Free plan</strong> &nbsp;
+        3) Copy your key from the "X-RapidAPI-Key" header shown in any code sample &nbsp;
+        4) Paste it below and click <strong>Save API Keys</strong>. Free plan = 10 searches/month; upgrade for unlimited.
+      </p>
       <div class="form-row">
         <div class="form-field">
           <label>RapidAPI Key (JSearch — LinkedIn, Indeed, Glassdoor)</label>
@@ -459,6 +472,7 @@
   <button type="button" class="btn-save-all" id="save-all-btn">Save All Changes</button>
   <span class="save-ok" id="save-ok">✓ Profile saved — Jobs and Matcher will now use your profile.</span>
   <span class="last-saved-txt" id="last-saved"></span>
+  <button type="button" id="clear-profile-btn" class="btn-clear-profile" title="Reset all profile data for your account">Clear Profile</button>
 </div>
 
 <script type="module">
@@ -667,12 +681,12 @@ function eduEntryHTML(e={}){
   return `<div class="entry-card edu-entry-card">
     <button type="button" class="btn-remove-entry">✕</button>
     <div class="form-row">
-      <div class="form-field"><label>Degree</label><input class="edu-degree" type="text" value="${escapeHtml(e.degree||'')}" placeholder="M.S. Computer Science" /></div>
-      <div class="form-field"><label>School</label><input class="edu-school" type="text" value="${escapeHtml(e.school||'')}" placeholder="University of Florida" /></div>
+      <div class="form-field"><label>Degree</label><input class="edu-degree" type="text" value="${escapeHtml(e.degree||'')}" placeholder="e.g. M.S. in Information Systems" /></div>
+      <div class="form-field"><label>School</label><input class="edu-school" type="text" value="${escapeHtml(e.school||'')}" placeholder="Your University Name" /></div>
     </div>
     <div class="form-row">
-      <div class="form-field"><label>Year</label><input class="edu-year" type="text" value="${escapeHtml(e.year||'')}" placeholder="2023" /></div>
-      <div class="form-field"><label>Location</label><input class="edu-loc" type="text" value="${escapeHtml(e.location||'')}" placeholder="Gainesville, FL" /></div>
+      <div class="form-field"><label>Year</label><input class="edu-year" type="text" value="${escapeHtml(e.year||'')}" placeholder="2024" /></div>
+      <div class="form-field"><label>Location</label><input class="edu-loc" type="text" value="${escapeHtml(e.location||'')}" placeholder="City, State" /></div>
     </div>
   </div>`;
 }
@@ -815,9 +829,23 @@ function saveAll(){
 }
 
 document.getElementById('save-all-btn').addEventListener('click', () => {
-  // Collect all sections
   ['basic','skills','experience','education','certifications','projects','publications'].forEach(applySection);
   renderViews(); saveAll();
+});
+
+document.getElementById('clear-profile-btn').addEventListener('click', () => {
+  if (!confirm('This will erase all your saved profile data for this account. Are you sure?')) return;
+  store.remove(KEYS.PROFILE);
+  // Reset in-memory profile to blank
+  profile = {
+    name:'', title:'', email: auth.email||'', phone:'', location:'', website:'', tagline:'',
+    links:{ linkedin:'', github:'' }, summary:'',
+    skills:{ languages:[], frameworks:[], cloud:[], databases:[], tools:[], other:[] },
+    experience:[], education:[], certifications:[], projects:[], publications:[], updatedAt: null
+  };
+  renderViews();
+  const btn = document.getElementById('clear-profile-btn');
+  btn.textContent = '✓ Cleared'; setTimeout(() => { btn.textContent = 'Clear Profile'; }, 2000);
 });
 
 // ---- DOCX parsing ----

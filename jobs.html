@@ -722,7 +722,21 @@ document.getElementById('clear-apps').addEventListener('click', () => {
     rebuildStats(state.jobs);
     updateAppliedStat();
 
-    if (state.jobs.length === 0) {
+    // Auto-populate search from profile title and trigger search if API key present
+    const profileTitle = (resume.title || '').trim();
+    const hasApiKey = !!store.get(KEYS.RAPID_API_KEY);
+    if (profileTitle) {
+      document.getElementById('live-q').value = profileTitle;
+      if (hasApiKey && state.jobs.length === 0) {
+        // Auto-search with profile title so jobs load on page open
+        setStatus(true, `Auto-searching for "${profileTitle}" from your profile…`);
+        runSearch();
+      } else if (state.jobs.length === 0) {
+        setStatus(false, `Profile title detected: "${profileTitle}". Add your RapidAPI key in Profile to auto-search, or click Search.`);
+      } else {
+        setStatus(false, `${state.jobs.length} cached jobs loaded · Press Search or change the query`);
+      }
+    } else if (state.jobs.length === 0) {
       setStatus(false, 'Enter a job title above and click Search to find live jobs.');
     } else {
       setStatus(false, `${state.jobs.length} cached jobs loaded · Enter a search to get live results`);

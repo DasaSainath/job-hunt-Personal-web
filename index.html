@@ -331,8 +331,8 @@
         const initials = (r.name || 'SD').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
         document.getElementById('hero-avatar').textContent = initials;
         document.getElementById('hero-name').textContent = r.name;
-        document.getElementById('hero-role').textContent = r.title || 'Software Engineer';
-        document.getElementById('hero-tagline').textContent = r.tagline || '';
+        document.getElementById('hero-role').textContent = r.title || '';
+        document.getElementById('hero-tagline').textContent = r.tagline || r.summary?.slice(0, 120) || '';
         document.getElementById('hero-location').textContent = r.location || '';
 
         const actions = [];
@@ -387,6 +387,18 @@
             <p class="card-title">${escapeHtml(ed.degree || '')}</p>
             <p class="card-sub">${escapeHtml(ed.school || '')} · ${escapeHtml(ed.location || '')} · ${escapeHtml(ed.year || '')}</p>
           </div>`).join('') || '<p class="muted">No education listed.</p>';
+
+        // If the profile is blank (new user), hide all sections and show setup CTA
+        const isBlank = !r.name && !r.title && !r.summary;
+        if (isBlank) {
+          document.getElementById('hero-name').textContent = auth.email?.split('@')[0] || 'Welcome';
+          document.getElementById('hero-tagline').textContent = 'Your profile is empty. Upload your resume in Profile to populate this page automatically.';
+          document.getElementById('hero-actions').innerHTML =
+            `<a class="hero-link primary" href="profile.html">Set up your profile →</a>
+             <a class="hero-link" href="matcher.html">Go to Matcher</a>`;
+          ['summary-section','skills-section','experience-section','projects-section','education-section']
+            .forEach(id => { document.getElementById(id).style.display = 'none'; });
+        }
 
       } catch (err) {
         console.error(err);

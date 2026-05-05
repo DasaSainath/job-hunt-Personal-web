@@ -215,6 +215,14 @@
       box-shadow: 0 2px 16px rgba(0,0,0,0.18); color: #111;
     }
 
+    /* Editable plain-text mode */
+    #resume-text-edit {
+      width: 100%; height: 100%; min-height: 500px;
+      font-family: monospace; font-size: 12.5px; line-height: 1.6;
+      background: #fff; color: #111; border: none; resize: none;
+      padding: 24px; box-sizing: border-box; outline: none;
+    }
+
     /* Gradient accent on right panel top */
     .panel-right::before {
       content: '';
@@ -277,6 +285,7 @@
         <div class="panel-header-btns">
           <label class="btn btn-ghost btn-sm" for="file-change">↑ Change</label>
           <input type="file" id="file-change" accept=".docx,.txt" hidden />
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-edit-text" title="Switch to editable plain text view">✏ Edit Text</button>
           <button type="button" class="btn btn-ghost btn-sm" id="dl-pdf">⬇ PDF</button>
           <button type="button" class="btn btn-sm" id="dl-word">⬇ Word</button>
         </div>
@@ -296,6 +305,7 @@
       <div class="resume-wrap" id="resume-wrap">
         <div class="doc-loading" id="doc-loading">Rendering document…</div>
         <div id="resume-preview"></div>
+        <textarea id="resume-text-edit" placeholder="Your resume text will appear here. You can edit, copy sections, or paste additional content — the matcher re-scores automatically." hidden></textarea>
       </div>
     </div>
 
@@ -382,6 +392,7 @@
   <script type="module">
     import { loadSkills, escapeHtml, scoreClass, markActiveNav } from './js/common.js';
     import { matchResumeToJD } from './js/matcher.js';
+    import { store, KEYS } from './js/storage.js';
 
     // Auth UI
     const auth = JSON.parse(localStorage.getItem('jh_auth') || '{}');
@@ -394,7 +405,7 @@
 
     markActiveNav();
 
-    const HISTORY_KEY = 'jh_match_history';
+    // History key uses store (user-scoped) so each login sees only their own history
     let skills = [];
     let originalBytes = null;
     let currentDocBytes = null;
@@ -531,7 +542,7 @@
       document.getElementById('results').classList.remove('results-hidden');
 
       const scoreEl = document.getElementById('final-score');
-      scoreEl.textContent = r.score + '%';
+      scoreEl.textContent = r.score.toFixed(1) + '%';
       scoreEl.className = 'score ' + scoreClass(r.score);
 
       const hl = [[75,'Strong match — apply today.'],[55,'Good match — worth a tailored application.'],[35,'Partial match — tailor heavily or skip.'],[0,'Weak match — probably not worth the time.']];
@@ -637,42 +648,33 @@
     }
 
     function buildExperienceBullet(gaps) {
-      const fw = gaps[0];
-      const supporting = gaps.slice(1, 3);
-      const h = hashCode(fw);
+      const h = hashCode(gaps[0] || 'x');
+      const kws = gaps.slice(0, 5);
 
-      const isCloudOps = /k8s|kubernetes|docker|terraform|ci.?cd|devops|pipeline|deploy|cloud|aws|azure|gcp/i.test(fw);
-      const isFrontend = /react|angular|vue|typescript|ui|frontend|component|css|html|tailwind/i.test(fw);
-      const isData = /sql|databas|etl|pipeline|spark|kafka|analytic|machine.?learn|ml|ai|data/i.test(fw);
-      const isBackend = /api|microservice|rest|graphql|server|backend|spring|django|flask|node/i.test(fw);
-
-      const withPart = supporting.length > 0 ? ` integrated with ${supporting.join(' and ')}` : '';
       const outcomes = [
-        'reducing system latency and improving developer velocity',
-        'delivering measurable improvements in reliability and team throughput',
-        'enabling scalable, production-grade solutions for cross-functional stakeholders',
-        'streamlining operations and accelerating feature delivery timelines',
-        'improving code quality and system observability across the stack'
+        'improving team velocity and operational efficiency',
+        'delivering measurable gains in reliability and team throughput',
+        'enabling scalable, production-grade outcomes for cross-functional stakeholders',
+        'streamlining workflows and accelerating delivery timelines',
+        'improving engineering quality across production systems'
       ];
       const outcome = outcomes[h % outcomes.length];
-
-      if (isCloudOps) return `Engineered ${fw} deployment workflows${withPart}, ${outcome}`;
-      if (isFrontend) return `Built ${fw}-based component libraries${withPart}, ${outcome}`;
-      if (isData) return `Designed ${fw} data pipelines${withPart}, ${outcome}`;
-      if (isBackend) return `Developed ${fw} service architecture${withPart}, ${outcome}`;
-
-      const verbs = ['Implemented', 'Delivered', 'Architected', 'Built', 'Led', 'Drove'];
+      const verbs = ['Built', 'Delivered', 'Implemented', 'Led', 'Architected'];
       const v = verbs[h % verbs.length];
-      return `${v} ${fw}${withPart ? '-based solutions' + withPart : ''}, ${outcome}`;
+
+      // Include ALL gap keywords verbatim so each word raises TF-IDF cosine similarity
+      const kwStr = kws.join(', ');
+      return `${v} cross-functional solutions incorporating ${kwStr} capabilities and methodologies, ${outcome}`;
     }
 
     function buildSummaryAddition(gaps, matchedSkills) {
-      const keywords = gaps.slice(0, 3).join(', ');
+      const kws = gaps.slice(0, 5);
+      const kwStr = kws.join(', ');
       if (matchedSkills.length > 0) {
         const matched = matchedSkills.slice(0, 2).join(' and ');
-        return `Hands-on experience with ${keywords}; proven ability to leverage ${matched} in production-grade, agile environments.`;
+        return `Hands-on experience with ${kwStr}; proven ability to leverage ${matched} in production-grade, collaborative environments to deliver mission-critical, operational solutions.`;
       }
-      return `Experienced in ${keywords}, with a focus on building scalable, maintainable software that creates real-world impact.`;
+      return `Experienced in applying ${kwStr} skills across production environments, with a focus on building scalable, maintainable software that creates measurable impact.`;
     }
 
     // ---- Suggestions ----
@@ -728,7 +730,7 @@
       container.innerHTML = items.map((it, idx) => {
         const badgeClass = `badge-${it.type}`;
         const typeLabel = it.type === 'skill' ? 'Missing Skill' : it.type === 'experience' ? 'Experience Bullet' : 'Summary Addition';
-        const impactText = it.delta > 0 ? `+${it.delta}% score if added` : 'Improves ATS coverage';
+        const impactText = it.delta > 0 ? `+${it.delta.toFixed(1)}% score if added` : 'Improves ATS coverage';
         const isSkill = it.type === 'skill';
 
         return `
@@ -783,8 +785,26 @@
     // ---- Inject sentence into docx section ----
     function injectSectionParagraph(xml, sentence, sectionType, withHighlight = true) {
       const rPr = withHighlight ? '<w:rPr><w:highlight w:val="yellow"/></w:rPr>' : '';
-      const run = `<w:r>${rPr}<w:t xml:space="preserve">${escXml(sentence)}</w:t></w:r>`;
-      const para = `<w:p>${run}</w:p>`;
+
+      // For experience: copy bullet style from an adjacent bullet paragraph so it renders as a bullet.
+      // Fallback: plain paragraph with a "•" prefix if no adjacent style can be copied.
+      let para;
+      if (sectionType === 'experience') {
+        // Find the first paragraph with <w:numPr> (list/bullet) in the experience section
+        const numPrMatch = xml.match(/<w:p[ >](?:(?!<\/w:p>)[\s\S])*?<w:numPr>([\s\S]*?)<\/w:numPr>(?:(?!<\/w:p>)[\s\S])*?<\/w:p>/);
+        if (numPrMatch) {
+          // Extract the numPr block to replicate the same list level/style
+          const numPr = numPrMatch[0].match(/<w:numPr>[\s\S]*?<\/w:numPr>/)?.[0] || '';
+          const pPr = numPr ? `<w:pPr>${numPr}</w:pPr>` : '';
+          para = `<w:p>${pPr}<w:r>${rPr}<w:t xml:space="preserve">${escXml(sentence)}</w:t></w:r></w:p>`;
+        } else {
+          // No numPr found — use a bullet character so it still looks like a bullet
+          para = `<w:p><w:r>${rPr}<w:t xml:space="preserve">• ${escXml(sentence)}</w:t></w:r></w:p>`;
+        }
+      } else {
+        // Summary: plain paragraph, no bullet
+        para = `<w:p><w:r>${rPr}<w:t xml:space="preserve">${escXml(sentence)}</w:t></w:r></w:p>`;
+      }
 
       const patterns = {
         experience: /experience|employment|work history|career|professional/i,
@@ -792,13 +812,14 @@
       };
       const pattern = patterns[sectionType];
 
-      // Only exit a section when we hit one of these clearly-different section headings.
-      // Deliberately narrow so company names / role titles don't cause early exit.
       const sectionBoundary = /^(education|academic|degree|certification|skills?|technical skills?|competencies|technologies?|projects?|publications?|awards?|references?|interests?|volunteer)/i;
+      // Detect a date range like "Jan 2024 – Present" or "Apr 2022 - Jul 2023"
+      const dateRangeRe = /(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[.,\s]+\d{4}/i;
 
       let insertPos = -1;
       let s = 0;
       let inSection = false;
+      let firstDateSeen = false; // tracks whether we've passed the first role's date line
 
       while (s < xml.length) {
         const pStart = xml.indexOf('<w:p', s);
@@ -818,13 +839,22 @@
         if (!inSection) {
           if (isHeading && pattern && pattern.test(texts)) {
             inSection = true;
-            insertPos = endPos; // default: right after heading (empty section fallback)
+            insertPos = endPos;
           }
         } else {
-          // Only break when we clearly hit a DIFFERENT section — not just any bold/caps text.
-          // This prevents company names ("GOOGLE INC.") from causing early exit.
           if (isHeading && texts.length < 50 && sectionBoundary.test(texts) && !pattern.test(texts)) break;
-          insertPos = endPos; // keep tracking end of last paragraph in this section
+
+          // For experience: stop after first role's last bullet, just before second role starts.
+          // A second date range (e.g. "Apr 2022 – Jul 2023") signals the next company/role.
+          if (sectionType === 'experience' && dateRangeRe.test(texts)) {
+            if (firstDateSeen) {
+              // Second role detected — insertPos already holds end of first role's last bullet
+              break;
+            }
+            firstDateSeen = true;
+          }
+
+          insertPos = endPos;
         }
         s = endPos;
       }
@@ -851,6 +881,14 @@
         await renderDoc(currentDocBytes.slice(0));
         resumeText += ' ' + sentence;
         addedSentences.push({ sentence, sectionType });
+        // Update section arrays so Experience/Summary bars also reflect the addition
+        if (sectionType === 'experience') {
+          resumeSections.experience = resumeSections.experience || [];
+          resumeSections.experience.push(sentence);
+        } else if (sectionType === 'summary') {
+          resumeSections.summary = resumeSections.summary || [];
+          resumeSections.summary.push(sentence);
+        }
         if (btn) { btn.textContent = '✓ Added to preview'; btn.disabled = true; }
         if (currentJD) analyze();
       } catch (e) { console.warn('Sentence inject failed:', e); alert('Could not add: ' + e.message); }
@@ -954,14 +992,14 @@
 
     // ---- History ----
     function saveHistory(r, jd) {
-      const h = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      const h = store.getJSON(KEYS.MATCH_HISTORY) || [];
       h.unshift({ date: new Date().toISOString(), score: r.score, matched: r.matchedSkills.length, missing: r.missingSkills.length, snippet: jd.slice(0, 120).replace(/\s+/g,' ') });
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, 20)));
+      store.setJSON(KEYS.MATCH_HISTORY, h.slice(0, 20));
       renderHistory();
     }
 
     function renderHistory() {
-      const h = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      const h = store.getJSON(KEYS.MATCH_HISTORY) || [];
       const el = document.getElementById('history-body');
       if (!h.length) { el.innerHTML = '<p class="muted small">No history yet.</p>'; return; }
       const cls = s => s >= 70 ? 'score-high' : s >= 50 ? 'score-mid' : 'score-low';
@@ -970,7 +1008,7 @@
           <thead><tr><th>Date</th><th>Score</th><th>Matched</th><th>Missing</th><th>JD Preview</th></tr></thead>
           <tbody>${h.map(e => `<tr>
             <td class="muted small">${new Date(e.date).toLocaleDateString()}</td>
-            <td class="${cls(e.score)}">${e.score}%</td>
+            <td class="${cls(e.score)}">${(+e.score).toFixed(1)}%</td>
             <td class="muted small">${e.matched}</td>
             <td class="muted small">${e.missing}</td>
             <td class="jd-cell">${escapeHtml(e.snippet)}…</td>
@@ -978,7 +1016,7 @@
         </table>
         <button type="button" class="btn btn-ghost btn-sm history-clear-btn" id="clear-hist">Clear History</button>`;
       document.getElementById('clear-hist').addEventListener('click', () => {
-        localStorage.removeItem(HISTORY_KEY); renderHistory();
+        store.remove(KEYS.MATCH_HISTORY); renderHistory();
       });
     }
 
@@ -988,6 +1026,39 @@
       document.getElementById('stats').textContent = `${skills.length} skills in dictionary · upload your resume to begin`;
       renderHistory();
     })();
+
+    // ---- Edit Text toggle ----
+    let editTextMode = false;
+    document.getElementById('btn-edit-text').addEventListener('click', () => {
+      if (!resumeText) return;
+      editTextMode = !editTextMode;
+      const preview = document.getElementById('resume-preview');
+      const textEdit = document.getElementById('resume-text-edit');
+      const btn = document.getElementById('btn-edit-text');
+      if (editTextMode) {
+        textEdit.value = resumeText;
+        preview.style.display = 'none';
+        textEdit.removeAttribute('hidden');
+        btn.textContent = '📄 Doc View';
+        btn.title = 'Switch back to formatted document view';
+      } else {
+        // Capture any edits the user made
+        resumeText = textEdit.value;
+        textEdit.setAttribute('hidden', '');
+        preview.style.display = '';
+        btn.textContent = '✏ Edit Text';
+        btn.title = 'Switch to editable plain text view';
+        if (currentJD) analyze();
+      }
+    });
+
+    // Re-score live as the user types in edit mode (debounced)
+    let editDebounce = null;
+    document.getElementById('resume-text-edit').addEventListener('input', e => {
+      resumeText = e.target.value;
+      clearTimeout(editDebounce);
+      if (currentJD) editDebounce = setTimeout(analyze, 800);
+    });
 
     document.getElementById('run-btn').addEventListener('click', analyze);
     document.getElementById('clear-btn').addEventListener('click', () => {
