@@ -280,6 +280,14 @@
       <div id="education-body"></div>
     </div>
 
+    <div class="about-section" id="certifications-section">
+      <div class="about-section-head">
+        <div class="section-bar bar-green"></div>
+        <h2>Certifications</h2>
+      </div>
+      <div id="certifications-body"></div>
+    </div>
+
   </div>
 
   <footer class="footer">
@@ -388,6 +396,16 @@
             <p class="card-sub">${escapeHtml(ed.school || '')} · ${escapeHtml(ed.location || '')} · ${escapeHtml(ed.year || '')}</p>
           </div>`).join('') || '<p class="muted">No education listed.</p>';
 
+        const certEl = document.getElementById('certifications-body');
+        const certs = r.certifications || [];
+        if (certs.length) {
+          certEl.innerHTML = `<div class="skill-chips">` +
+            certs.map(c => `<span class="chip" title="${escapeHtml(c.issuer || '')} ${escapeHtml(c.year || '')}">${escapeHtml(c.name || '')}</span>`).join('') +
+            `</div>`;
+        } else {
+          document.getElementById('certifications-section').style.display = 'none';
+        }
+
         // If the profile is blank (new user), hide all sections and show setup CTA
         const isBlank = !r.name && !r.title && !r.summary;
         if (isBlank) {
@@ -396,7 +414,7 @@
           document.getElementById('hero-actions').innerHTML =
             `<a class="hero-link primary" href="profile.html">Set up your profile →</a>
              <a class="hero-link" href="matcher.html">Go to Matcher</a>`;
-          ['summary-section','skills-section','experience-section','projects-section','education-section']
+          ['summary-section','skills-section','experience-section','projects-section','education-section','certifications-section']
             .forEach(id => { document.getElementById(id).style.display = 'none'; });
         }
 
