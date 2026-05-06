@@ -181,8 +181,8 @@
 <!-- API key notice -->
 <div class="api-notice-wrap">
   <div class="api-key-banner" id="api-banner">
-    🔑 <strong>No JSearch API key set.</strong> Showing Remotive + Himalayas only (limited US jobs).
-    <a href="profile.html#api-settings">Add your RapidAPI key in Profile →</a> to unlock LinkedIn, Indeed, Glassdoor results.
+    🌐 Free sources active: Remotive · The Muse · RemoteOK.
+    <a href="profile.html#api-settings">Add Adzuna keys in Profile →</a> for 250 extra searches/day, or add RapidAPI for LinkedIn/Indeed/Glassdoor.
   </div>
 </div>
 
@@ -284,7 +284,7 @@
 </div>
 
 <footer class="footer">
-  JobHub · Powered by JSearch (LinkedIn/Indeed/Glassdoor) + Remotive + Himalayas
+  JobHub · Powered by Remotive · The Muse · RemoteOK · Adzuna · JSearch (LinkedIn/Indeed/Glassdoor)
 </footer>
 
 <script type="module">
@@ -305,14 +305,22 @@ const state = { jobs: [], cachedJobs: [], filtered: [] };
 let resumeText = '', skills = [], activeHours = 0, currentPage = 1;
 
 // ---- API key check ----
-const rapidKey = store.get(KEYS.RAPID_API_KEY);
-const banner = document.getElementById('api-banner');
+const rapidKey   = store.get(KEYS.RAPID_API_KEY);
+const adzunaId   = store.get(KEYS.ADZUNA_APP_ID);
+const adzunaKey  = store.get(KEYS.ADZUNA_APP_KEY);
+const banner     = document.getElementById('api-banner');
+const hasAdzuna  = !!(adzunaId && adzunaKey);
+const sourceParts = ['Remotive', 'The Muse', 'RemoteOK'];
+if (hasAdzuna)  sourceParts.push('Adzuna');
+if (rapidKey)   sourceParts.push('JSearch (LinkedIn · Indeed · Glassdoor)');
 if (rapidKey) {
   banner.className = 'api-key-banner has-key';
-  banner.innerHTML = '✅ JSearch API connected — showing LinkedIn, Indeed, Glassdoor jobs.';
-} else {
-  document.getElementById('sources-label').textContent = 'Sources: Remotive · Himalayas (add RapidAPI key for LinkedIn/Indeed)';
+  banner.innerHTML = `✅ Connected: ${sourceParts.join(' · ')}`;
+} else if (hasAdzuna) {
+  banner.className = 'api-key-banner has-key';
+  banner.innerHTML = `✅ Adzuna active (250/day) + free sources. <a href="profile.html#api-settings">Add RapidAPI →</a> for LinkedIn/Indeed.`;
 }
+document.getElementById('sources-label').textContent = `Sources: ${sourceParts.join(' · ')}`;
 
 // ---- JSearch (LinkedIn, Indeed, Glassdoor via RapidAPI) ----
 async function fetchFromJSearch(query, location) {
@@ -371,22 +379,84 @@ async function fetchFromRemotive(query) {
   } catch (e) { console.warn('Remotive:', e); return []; }
 }
 
-// ---- Himalayas (free fallback) ----
-async function fetchFromHimalayas(query) {
+// ---- Adzuna (free — 250 searches/day, requires app_id + app_key) ----
+async function fetchFromAdzuna(query, location) {
+  const appId  = store.get(KEYS.ADZUNA_APP_ID);
+  const appKey = store.get(KEYS.ADZUNA_APP_KEY);
+  if (!appId || !appKey || !query) return [];
+  const where = (location || 'United States').split(',')[0].trim();
+  const params = new URLSearchParams({ what: query, where, results_per_page: '50', content_type: 'application/json' });
   try {
-    const url = `https://himalayas.app/jobs/api?limit=40${query ? '&q=' + encodeURIComponent(query) : ''}`;
-    const r = await fetch(url); if (!r.ok) return [];
+    const r = await fetch(`https://api.adzuna.com/v1/api/jobs/us/search/1?app_id=${appId}&app_key=${appKey}&${params}`);
+    if (!r.ok) { console.warn('Adzuna HTTP', r.status); return []; }
     const d = await r.json();
-    return (d.jobs || []).map(j => ({
-      id: 'him-' + (j.id || j.slug || Math.random()),
-      title: j.title || '', company: (j.company || {}).name || '',
-      location: j.locationRestrictions || 'Remote',
-      url: j.applicationLink || j.url || '', source: 'Himalayas',
-      posted: (j.createdAt || '').slice(0, 10),
-      description: (j.description || '').replace(/<[^>]+>/g,' ').slice(0, 1500),
-      tags: j.skills || [], _live: true
+    return (d.results || []).map(j => ({
+      id: 'az-' + j.id,
+      title: j.title || '',
+      company: (j.company || {}).display_name || '',
+      location: (j.location || {}).display_name || '',
+      url: j.redirect_url || '',
+      source: 'Adzuna',
+      posted: (j.created || '').slice(0, 10),
+      description: (j.description || '').slice(0, 1500),
+      salary: j.salary_min ? `$${Math.round(j.salary_min/1000)}k–$${Math.round((j.salary_max||j.salary_min)/1000)}k` : '',
+      tags: [], _live: true, _jsearch: true
     }));
-  } catch (e) { console.warn('Himalayas:', e); return []; }
+  } catch (e) { console.warn('Adzuna:', e); return []; }
+}
+
+// ---- The Muse (free, no key needed) ----
+async function fetchFromTheMuse(query) {
+  try {
+    const category = encodeURIComponent('Software Engineering');
+    const r = await fetch(`https://www.themuse.com/api/public/jobs?page=0&category=${category}&level=5&level=6&descending=true`);
+    if (!r.ok) return [];
+    const d = await r.json();
+    const queryLow = (query || '').toLowerCase();
+    return (d.results || [])
+      .filter(j => !queryLow || (j.name || '').toLowerCase().includes(queryLow.split(' ')[0]))
+      .map(j => ({
+        id: 'muse-' + j.id,
+        title: j.name || '',
+        company: (j.company || {}).name || '',
+        location: ((j.locations || [])[0] || {}).name || 'Remote',
+        url: j.refs?.landing_page || '',
+        source: 'The Muse',
+        posted: (j.publication_date || '').slice(0, 10),
+        description: (j.contents || '').replace(/<[^>]+>/g, ' ').slice(0, 1500),
+        tags: (j.tags || []).map(t => t.name || t).filter(Boolean),
+        _live: true
+      }));
+  } catch (e) { console.warn('TheMuse:', e); return []; }
+}
+
+// ---- RemoteOK (free, no key, remote-only jobs) ----
+async function fetchFromRemoteOK(query) {
+  try {
+    const r = await fetch('https://remoteok.com/api', { headers: { 'User-Agent': 'jobhub-app' } });
+    if (!r.ok) return [];
+    const d = await r.json();
+    const jobs = d.slice(1); // first element is metadata
+    const queryWords = (query || '').toLowerCase().split(/\s+/).filter(w => w.length >= 3);
+    return jobs
+      .filter(j => !queryWords.length || queryWords.some(w =>
+        (j.position || '').toLowerCase().includes(w) ||
+        (j.tags || []).some(t => (t || '').toLowerCase().includes(w))
+      ))
+      .slice(0, 40)
+      .map(j => ({
+        id: 'rok-' + (j.id || j.slug || Math.random()),
+        title: j.position || '',
+        company: j.company || '',
+        location: 'Remote',
+        url: j.url || `https://remoteok.com/l/${j.slug}`,
+        source: 'RemoteOK',
+        posted: j.date ? j.date.slice(0, 10) : '',
+        description: (j.description || '').replace(/<[^>]+>/g, ' ').slice(0, 1500),
+        salary: j.salary_min ? `$${Math.round(j.salary_min/1000)}k–$${Math.round((j.salary_max||j.salary_min)/1000)}k` : '',
+        tags: j.tags || [], _live: true
+      }));
+  } catch (e) { console.warn('RemoteOK:', e); return []; }
 }
 
 // ---- Title relevance filter (keeps non-JSearch results on-topic) ----
@@ -658,24 +728,25 @@ async function runSearch() {
 
   setStatus(true, `Searching for "${query}" in ${location}…`);
 
-  const hasKey = !!store.get(KEYS.RAPID_API_KEY);
+  const hasRapid  = !!store.get(KEYS.RAPID_API_KEY);
+  const hasAdzuna = !!(store.get(KEYS.ADZUNA_APP_ID) && store.get(KEYS.ADZUNA_APP_KEY));
   let results = [];
 
-  if (hasKey) {
-    const [jsearch, remotive, himalayas] = await Promise.all([
-      fetchFromJSearch(query, location),
-      fetchFromRemotive(query),
-      fetchFromHimalayas(query)
-    ]);
-    results = [...jsearch, ...remotive, ...himalayas];
-    document.getElementById('sources-label').textContent = `Sources: LinkedIn · Indeed · Glassdoor · Remotive · Himalayas`;
-  } else {
-    const [remotive, himalayas] = await Promise.all([
-      fetchFromRemotive(query),
-      fetchFromHimalayas(query)
-    ]);
-    results = [...remotive, ...himalayas];
-  }
+  const freeFetches = [
+    fetchFromRemotive(query),
+    fetchFromTheMuse(query),
+    fetchFromRemoteOK(query),
+  ];
+  if (hasAdzuna)  freeFetches.push(fetchFromAdzuna(query, location));
+  if (hasRapid)   freeFetches.push(fetchFromJSearch(query, location));
+
+  const fetched = await Promise.all(freeFetches);
+  results = fetched.flat();
+
+  const activeLabels = ['Remotive', 'The Muse', 'RemoteOK'];
+  if (hasAdzuna) activeLabels.push('Adzuna');
+  if (hasRapid)  activeLabels.push('LinkedIn · Indeed · Glassdoor');
+  document.getElementById('sources-label').textContent = `Sources: ${activeLabels.join(' · ')}`;
 
   const relevant = results.filter(j => isRelevant(j, query));
   const deduped = dedup(relevant);

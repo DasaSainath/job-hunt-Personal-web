@@ -436,13 +436,29 @@
     </div>
     <div class="card-body">
       <p class="api-desc">
-        Keys are stored only in your browser — never sent anywhere.
-        <strong>To get a free RapidAPI key:</strong>
-        1) Go to <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank" rel="noopener">RapidAPI → JSearch</a> &nbsp;
-        2) Click <strong>Subscribe to Test</strong> → choose the <strong>Free plan</strong> &nbsp;
-        3) Copy your key from the "X-RapidAPI-Key" header shown in any code sample &nbsp;
-        4) Paste it below and click <strong>Save API Keys</strong>. Free plan = 10 searches/month; upgrade for unlimited.
+        Keys are stored only in your browser — never sent anywhere.<br>
+        <strong>Free job sources (no key needed):</strong> Remotive, The Muse, RemoteOK — always active.<br>
+        <strong>Adzuna (250 free searches/day):</strong> Register at <a href="https://developer.adzuna.com" target="_blank" rel="noopener">developer.adzuna.com</a> → create an app → copy App ID and App Key below.<br>
+        <strong>JSearch / RapidAPI (LinkedIn, Indeed, Glassdoor):</strong> Go to <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank" rel="noopener">RapidAPI → JSearch</a> → Subscribe Free → copy X-RapidAPI-Key.
       </p>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Adzuna App ID (free — 250 searches/day)</label>
+          <div class="api-key-field">
+            <input type="password" id="adzuna-app-id" placeholder="e.g. a1b2c3d4" />
+            <button type="button" class="btn-toggle-key" id="toggle-adzuna-id">Show</button>
+          </div>
+          <span class="key-status" id="adzuna-id-status">Not set</span>
+        </div>
+        <div class="form-field">
+          <label>Adzuna App Key</label>
+          <div class="api-key-field">
+            <input type="password" id="adzuna-app-key" placeholder="Paste your Adzuna App Key" />
+            <button type="button" class="btn-toggle-key" id="toggle-adzuna-key">Show</button>
+          </div>
+          <span class="key-status" id="adzuna-key-status">Not set</span>
+        </div>
+      </div>
       <div class="form-row">
         <div class="form-field">
           <label>RapidAPI Key (JSearch — LinkedIn, Indeed, Glassdoor)</label>
@@ -796,26 +812,59 @@ function applySection(sec){
 });
 
 document.getElementById('save-api-keys').addEventListener('click', () => {
-  const rk = document.getElementById('rapid-key').value.trim();
-  const ak = document.getElementById('ai-key').value.trim();
-  if(rk) store.set(KEYS.RAPID_API_KEY, rk); else store.remove(KEYS.RAPID_API_KEY);
-  if(ak) store.set(KEYS.AI_API_KEY, ak); else store.remove(KEYS.AI_API_KEY);
+  const azId  = document.getElementById('adzuna-app-id').value.trim();
+  const azKey = document.getElementById('adzuna-app-key').value.trim();
+  const rk    = document.getElementById('rapid-key').value.trim();
+  const ak    = document.getElementById('ai-key').value.trim();
+  if(azId)  store.set(KEYS.ADZUNA_APP_ID,  azId);  else store.remove(KEYS.ADZUNA_APP_ID);
+  if(azKey) store.set(KEYS.ADZUNA_APP_KEY, azKey); else store.remove(KEYS.ADZUNA_APP_KEY);
+  if(rk)    store.set(KEYS.RAPID_API_KEY,  rk);    else store.remove(KEYS.RAPID_API_KEY);
+  if(ak)    store.set(KEYS.AI_API_KEY,     ak);    else store.remove(KEYS.AI_API_KEY);
   updateKeyStatuses();
   const btn = document.getElementById('save-api-keys');
   btn.textContent = '✓ Keys Saved'; setTimeout(() => btn.textContent = 'Save API Keys', 2000);
 });
 
+// Toggle show/hide for Adzuna fields
+document.getElementById('toggle-adzuna-id').addEventListener('click', function() {
+  const inp = document.getElementById('adzuna-app-id');
+  const hidden = inp.type === 'password';
+  inp.type = hidden ? 'text' : 'password';
+  this.textContent = hidden ? 'Hide' : 'Show';
+});
+document.getElementById('toggle-adzuna-key').addEventListener('click', function() {
+  const inp = document.getElementById('adzuna-app-key');
+  const hidden = inp.type === 'password';
+  inp.type = hidden ? 'text' : 'password';
+  this.textContent = hidden ? 'Hide' : 'Show';
+});
+
 function updateKeyStatuses(){
-  const rk = store.get(KEYS.RAPID_API_KEY);
-  const ak = store.get(KEYS.AI_API_KEY);
-  const rs = document.getElementById('rapid-status'), as = document.getElementById('ai-status');
+  const azId  = store.get(KEYS.ADZUNA_APP_ID);
+  const azKey = store.get(KEYS.ADZUNA_APP_KEY);
+  const rk    = store.get(KEYS.RAPID_API_KEY);
+  const ak    = store.get(KEYS.AI_API_KEY);
+
+  const azIdEl  = document.getElementById('adzuna-id-status');
+  const azKeyEl = document.getElementById('adzuna-key-status');
+  const rs      = document.getElementById('rapid-status');
+  const as      = document.getElementById('ai-status');
+
+  azIdEl.textContent  = azId  ? '✓ App ID set' : 'Not set';
+  azIdEl.className    = 'key-status ' + (azId  ? 'set' : 'unset');
+  azKeyEl.textContent = azKey ? '✓ App Key set — Adzuna enabled (250 searches/day)' : 'Not set';
+  azKeyEl.className   = 'key-status ' + (azKey ? 'set' : 'unset');
+
   rs.textContent = rk ? '✓ Key set — LinkedIn/Indeed/Glassdoor enabled' : 'Not set — using free sources only';
   rs.className = 'key-status ' + (rk ? 'set' : 'unset');
   as.textContent = ak ? '✓ Key set — AI-powered scoring enabled' : 'Not set — using keyword matching only';
   as.className = 'key-status ' + (ak ? 'set' : 'unset');
+
   // Pre-fill inputs (masked)
-  if(rk) document.getElementById('rapid-key').value = rk;
-  if(ak) document.getElementById('ai-key').value = ak;
+  if(azId)  document.getElementById('adzuna-app-id').value  = azId;
+  if(azKey) document.getElementById('adzuna-app-key').value = azKey;
+  if(rk)    document.getElementById('rapid-key').value      = rk;
+  if(ak)    document.getElementById('ai-key').value         = ak;
 }
 
 // ---- Save all ----

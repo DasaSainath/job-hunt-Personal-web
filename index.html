@@ -194,6 +194,40 @@
       .hero-name { font-size: 2rem; }
       .about-body { padding: 0 16px 48px; }
     }
+
+    /* ---- Dark-page overrides: all body text must be light ---- */
+    /* The page body is #080c16 but CSS vars default to light-mode colors. */
+    .about-body { color: #d4d8e2; }
+    .about-section-head h2 { color: #e8eaf0; }
+    .about-section { border-top-color: rgba(255,255,255,0.08); }
+    .about-summary { color: rgba(255,255,255,0.75); }
+
+    /* Skills rows on dark background */
+    .skill-row { background: rgba(255,255,255,0.04) !important; border-color: rgba(255,255,255,0.10) !important; }
+    .skill-row-label { color: rgba(255,255,255,0.45) !important; }
+    .chip { background: rgba(124,58,237,0.18) !important; border-color: rgba(124,58,237,0.35) !important; color: #c4b5fd !important; }
+
+    /* Experience timeline */
+    .exp-role { color: #e8eaf0 !important; }
+    .exp-meta { color: rgba(255,255,255,0.48) !important; }
+    .exp-bullets li { color: rgba(255,255,255,0.75) !important; }
+    .exp-item::before { background: #7c3aed !important; border-color: rgba(255,255,255,0.15) !important; }
+    .exp-item::after { background: rgba(255,255,255,0.12) !important; }
+
+    /* Project cards */
+    .project-card { background: rgba(255,255,255,0.04) !important; border-color: rgba(255,255,255,0.10) !important; }
+    .project-card:hover { border-color: rgba(124,58,237,0.6) !important; }
+    .project-name, .project-name a { color: #e8eaf0 !important; }
+    .project-name a:hover { color: #a78bfa !important; }
+    .project-desc { color: rgba(255,255,255,0.55) !important; }
+
+    /* Education cards */
+    .card { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.10) !important; }
+    .card-title { color: #e8eaf0 !important; }
+    .card-sub { color: rgba(255,255,255,0.5) !important; }
+
+    /* General muted text */
+    .about-body .muted { color: rgba(255,255,255,0.45) !important; }
   </style>
 </head>
 <body>
@@ -297,6 +331,24 @@
   <script type="module">
     import { loadResume, escapeHtml, markActiveNav } from './js/common.js';
 
+    // Hash-based gradient for project cards — deterministic, no API needed
+    function projectGradient(title) {
+      const palettes = [
+        ['#0d1f3c','#1a3a5c'],   // deep blue
+        ['#1a0d2e','#2d1b4e'],   // deep purple
+        ['#0d2e1a','#1a4e2d'],   // deep green
+        ['#2e1a0d','#4e2d1a'],   // deep amber
+        ['#2e0d1a','#4e1a2d'],   // deep rose
+        ['#0d2e2e','#1a4e4e'],   // deep teal
+        ['#1a1a0d','#2d2d1a'],   // deep olive
+        ['#2e0d2e','#4e1a4e'],   // deep magenta
+      ];
+      let h = 0;
+      for (let i = 0; i < title.length; i++) h = (h * 31 + title.charCodeAt(i)) >>> 0;
+      const [a, b] = palettes[h % palettes.length];
+      return `linear-gradient(135deg, ${a} 0%, ${b} 100%)`;
+    }
+
     // Auth UI
     const auth = JSON.parse(localStorage.getItem('jh_auth') || '{}');
     document.getElementById('nav-avatar').textContent = auth.initials || 'SD';
@@ -380,7 +432,8 @@
           const techChips = Array.isArray(p.tech)
             ? p.tech.map(t => `<span class="chip">${escapeHtml(t)}</span>`).join('')
             : (p.tech ? `<span class="chip">${escapeHtml(p.tech)}</span>` : '');
-          return `<div class="project-card">
+          const grad = projectGradient(title);
+          return `<div class="project-card" style="background:${grad};border-color:rgba(255,255,255,0.12)!important;">
             <p class="project-name">
               ${url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(title)}</a>` : escapeHtml(title)}
             </p>

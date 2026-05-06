@@ -28,11 +28,13 @@ export const store = {
 
 // Named keys — import these instead of raw strings to avoid typos
 export const KEYS = {
-  PROFILE:       'profile',
-  APPLICATIONS:  'applications',
-  MATCH_HISTORY: 'match_history',
-  RAPID_API_KEY: 'rapid_api_key',
-  AI_API_KEY:    'ai_api_key',
-  LOCATION_PREF: 'location_pref',
-  RESUME_TEXT:   'resume_text',
+  PROFILE:          'profile',
+  APPLICATIONS:     'applications',
+  MATCH_HISTORY:    'match_history',
+  RAPID_API_KEY:    'rapid_api_key',
+  AI_API_KEY:       'ai_api_key',
+  LOCATION_PREF:    'location_pref',
+  RESUME_TEXT:      'resume_text',
+  ADZUNA_APP_ID:    'adzuna_app_id',
+  ADZUNA_APP_KEY:   'adzuna_app_key',
 };
